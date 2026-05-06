@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>个人中心 - PetMind 智能宠物健康管理</title>
+  <script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
+  <script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+    body { font-family: 'Noto Sans SC', sans-serif; background-color: #FFF9F5; color: #333; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .card-shadow { box-shadow: 0 10px 25px -5px rgba(255, 141, 108, 0.1), 0 8px 10px -6px rgba(255, 141, 108, 0.1); }
+    .nav-link:hover { color: #FF8D6C; }
+    .nav-active { color: #FF8D6C; font-weight: 700; border-bottom: 2px solid #FF8D6C; }
+    .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); }
+    .btn-primary { background-color: #FF8D6C; color: white; transition: all 0.3s; }
+    .btn-primary:hover { background-color: #FF7A50; transform: translateY(-1px); }
+    .modal-overlay { background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); }
+    .toggle-on { background-color: #FF8D6C; }
+    .toggle-off { background-color: #e5e7eb; }
+    .toggle-circle { transition: transform 0.2s ease; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<!-- 顶部导航栏 -->
+<header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-orange-50 px-4 md:px-8 py-4">
+  <div class="max-w-7xl mx-auto flex justify-between items-center">
+    <div class="flex items-center gap-2">
+      <div class="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-200">
+        <iconify-icon icon="ph:paw-print-fill" width="24"></iconify-icon>
+      </div>
+      <span class="text-xl font-bold bg-gradient-to-r from-orange-600 to-orange-400 bg-clip-text text-transparent hidden sm:block">PetMind</span>
+    </div>
+    <nav class="hidden md:flex items-center gap-8">
+      <a class="nav-link py-1" href="index.html">首页</a><a class="nav-link py-1" href="behavior.html">行为感知</a><a class="nav-link py-1" href="health.html">健康管家</a><a class="nav-link py-1" href="social.html">宠友圈</a><a class="nav-link nav-active py-1" href="personal.html">我的</a>
+    </nav>
+    <div class="flex items-center gap-4">
+      <span class="text-xs text-gray-400 hidden lg:block">2026年05月04日</span>
+      <button class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 md:hidden"><iconify-icon icon="ph:list-bold" width="24"></iconify-icon></button>
+      <div id="nav-avatar" class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 overflow-hidden border-2 border-orange-200">
+        <img id="nav-avatar-img" alt="User Avatar" class="w-full h-full object-cover"
+             src="https://modao.cc/agent-py/media/generated_images/2026-05-03/7317a86f439f41ea80cacd25057b2cf4.jpg#desc=User%20Avatar"/>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="flex-grow max-w-7xl mx-auto w-full px-4 md:px-8 py-8">
+  <div class="mb-8"><h1 class="text-3xl font-bold text-gray-800">个人中心</h1><p class="text-gray-400 mt-2">管理您的账号设置、宠物档案及监护成员</p></div>
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div class="lg:col-span-8 space-y-8">
+      <!-- 用户个人资料卡片 -->
+      <section class="bg-white rounded-[32px] p-6 md:p-8 card-shadow border border-orange-50 flex flex-col md:flex-row items-center gap-8">
+        <div class="relative" id="profile-avatar-container">
+          <img id="profile-avatar" alt="Large User Avatar" class="w-32 h-32 rounded-full border-4 border-orange-100 object-cover"
+               src="15.jpg"/>
+          <button id="camera-btn" class="absolute bottom-1 right-1 w-10 h-10 bg-orange-500 text-white rounded-full border-4 border-white flex items-center justify-center shadow-lg">
+            <iconify-icon icon="ph:camera-bold" width="20"></iconify-icon>
+          </button>
+        </div>
+        <div class="flex-grow text-center md:text-left">
+          <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
+            <h2 id="display-name" class="text-2xl font-bold text-gray-800">张三 (Zack)</h2>
+            <span class="px-3 py-1 bg-orange-100 text-orange-600 text-xs font-bold rounded-full w-max mx-auto md:mx-0">超级铲屎官 VIP</span>
+          </div>
+          <p id="display-bio" class="text-gray-500 text-sm mb-6 max-w-md">热爱生活的猫犬双全用户，致力于通过 AI 技术为宠物提供更好的生活环境。已加入 PetMind 428 天。</p>
+          <div class="flex flex-wrap justify-center md:justify-start gap-4">
+            <button id="edit-profile-btn" class="px-6 py-2 btn-primary rounded-2xl text-sm font-bold">编辑资料</button>
+            <button id="account-security-btn" class="px-6 py-2 bg-gray-100 text-gray-600 rounded-2xl text-sm font-bold hover:bg-gray-200 transition-colors">账户安全</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 数据统计网格 -->
+      <section>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-white rounded-[24px] p-5 border border-orange-50 card-shadow text-center"><div class="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center mx-auto mb-3"><iconify-icon icon="ph:video-camera-bold" width="22"></iconify-icon></div><p class="text-2xl font-bold text-gray-800">1,248</p><p class="text-xs text-gray-400 mt-1">分析次数</p></div>
+          <div class="bg-white rounded-[24px] p-5 border border-orange-50 card-shadow text-center"><div class="w-10 h-10 bg-green-50 text-green-500 rounded-xl flex items-center justify-center mx-auto mb-3"><iconify-icon icon="ph:heart-bold" width="22"></iconify-icon></div><p class="text-2xl font-bold text-gray-800">92</p><p class="text-xs text-gray-400 mt-1">健康评分</p></div>
+          <div class="bg-white rounded-[24px] p-5 border border-orange-50 card-shadow text-center"><div class="w-10 h-10 bg-purple-50 text-purple-500 rounded-xl flex items-center justify-center mx-auto mb-3"><iconify-icon icon="ph:users-bold" width="22"></iconify-icon></div><p id="member-count" class="text-2xl font-bold text-gray-800">3</p><p class="text-xs text-gray-400 mt-1">共享成员</p></div>
+          <div class="bg-white rounded-[24px] p-5 border border-orange-50 card-shadow text-center"><div class="w-10 h-10 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center mx-auto mb-3"><iconify-icon icon="ph:article-bold" width="22"></iconify-icon></div><p class="text-2xl font-bold text-gray-800">15</p><p class="text-xs text-gray-400 mt-1">历史报告</p></div>
+        </div>
+      </section>
+
+      <!-- 宠物档案管理 -->
+      <section class="bg-white rounded-[32px] p-6 md:p-8 card-shadow border border-orange-50">
+        <div class="flex justify-between items-center mb-8"><div><h3 class="text-xl font-bold text-gray-800">宠物档案</h3><p class="text-xs text-gray-400 mt-1">管理您关联的所有宠物信息</p></div><button id="add-pet-btn" class="flex items-center gap-2 text-orange-500 font-bold text-sm hover:underline"><iconify-icon icon="ph:plus-circle-bold" width="20"></iconify-icon>添加宠物</button></div>
+        <div id="pets-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+      </section>
+
+      <!-- 行为基线设置 -->
+      <section class="bg-white rounded-[32px] p-6 md:p-8 card-shadow border border-orange-50">
+        <h3 class="text-xl font-bold text-gray-800 mb-6">行为基线设置</h3>
+        <div class="space-y-6">
+          <div class="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-2xl bg-orange-50/20 border border-orange-50 gap-4">
+            <div><h4 class="font-bold text-gray-800 text-sm">活动量异常波动</h4><p class="text-xs text-gray-400 mt-1">根据过去30天基线，当活动量下降超过40%时提醒</p></div>
+            <div class="flex items-center gap-3">
+              <span id="activity-toggle-text" class="text-xs font-bold text-orange-500">已开启</span>
+              <div id="activity-toggle" class="w-12 h-6 toggle-on bg-orange-500 rounded-full relative cursor-pointer shadow-inner"><div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full toggle-circle"></div></div>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 rounded-2xl border border-gray-100"><p class="text-xs font-bold text-gray-400 mb-2">睡眠习惯基线</p><div class="flex items-end gap-1 h-12"><div class="w-full bg-orange-100 h-1/2 rounded-t-sm"></div><div class="w-full bg-orange-200 h-2/3 rounded-t-sm"></div><div class="w-full bg-orange-400 h-full rounded-t-sm"></div><div class="w-full bg-orange-300 h-3/4 rounded-t-sm"></div><div class="w-full bg-orange-100 h-1/3 rounded-t-sm"></div><div class="w-full bg-orange-200 h-1/2 rounded-t-sm"></div><div class="w-full bg-orange-500 h-[90%] rounded-t-sm"></div></div><p class="text-[10px] text-gray-400 mt-2 text-center">平均每日深度睡眠: 9.5h</p></div>
+            <div class="p-4 rounded-2xl border border-gray-100"><p class="text-xs font-bold text-gray-400 mb-2">进食频率基线</p><div class="flex items-center justify-between h-12"><div class="flex flex-col items-center"><span class="text-xs font-bold">早</span><div class="w-2 h-2 rounded-full bg-green-400 mt-1"></div></div><div class="flex flex-col items-center"><span class="text-xs font-bold">中</span><div class="w-2 h-2 rounded-full bg-orange-400 mt-1"></div></div><div class="flex flex-col items-center"><span class="text-xs font-bold">晚</span><div class="w-2 h-2 rounded-full bg-green-400 mt-1"></div></div><div class="flex flex-col items-center"><span class="text-xs font-bold">夜</span><div class="w-2 h-2 rounded-full bg-gray-200 mt-1"></div></div></div><p class="text-[10px] text-gray-400 mt-2 text-center">建议每日餐数: 3次</p></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="lg:col-span-4 space-y-8">
+      <!-- 共享监护 -->
+      <section class="bg-white rounded-[32px] p-6 card-shadow border border-orange-50">
+        <div class="flex justify-between items-center mb-6"><h3 class="font-bold text-gray-800">共享监护</h3><button id="add-member-btn" class="w-8 h-8 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center hover:bg-orange-100"><iconify-icon icon="ph:user-plus-bold"></iconify-icon></button></div>
+        <div id="guardian-list" class="space-y-4"></div>
+      </section>
+
+      <!-- 历史报告归档 (下载按钮已修复层级) -->
+      <section class="bg-white rounded-[32px] p-6 card-shadow border border-orange-50">
+        <div class="flex justify-between items-center mb-6"><h3 class="font-bold text-gray-800">历史报告归档</h3><a class="text-xs text-orange-500 font-bold hover:underline" href="#">查看全部</a></div>
+        <div class="space-y-3">
+          <div class="group flex items-center gap-4 p-4 rounded-2xl border border-gray-50 hover:border-orange-100 hover:bg-orange-50/30 transition-all">
+            <div class="w-12 h-12 bg-orange-100 text-orange-500 rounded-xl flex items-center justify-center"><iconify-icon icon="ph:file-pdf-bold" width="24"></iconify-icon></div>
+            <div class="flex-grow"><h4 class="text-sm font-bold text-gray-800">2024年4月健康月报</h4><p class="text-[10px] text-gray-400">PDF · 2.4 MB · 05月01日</p></div>
+            <button id="download-pdf-1" class="relative z-10 text-gray-300 hover:text-orange-500 flex items-center justify-center w-8 h-8" style="pointer-events: auto;"><iconify-icon icon="ph:download-simple-bold" width="20"></iconify-icon></button>
+          </div>
+          <div class="group flex items-center gap-4 p-4 rounded-2xl border border-gray-50 hover:border-orange-100 hover:bg-orange-50/30 transition-all">
+            <div class="w-12 h-12 bg-blue-100 text-blue-500 rounded-xl flex items-center justify-center"><iconify-icon icon="ph:file-doc-bold" width="24"></iconify-icon></div>
+            <div class="flex-grow"><h4 class="text-sm font-bold text-gray-800">行为异常专项分析</h4><p class="text-[10px] text-gray-400">DOCX · 1.1 MB · 04月20日</p></div>
+            <button id="download-docx" class="relative z-10 text-gray-300 hover:text-blue-500 flex items-center justify-center w-8 h-8" style="pointer-events: auto;"><iconify-icon icon="ph:download-simple-bold" width="20"></iconify-icon></button>
+          </div>
+          <div class="group flex items-center gap-4 p-4 rounded-2xl border border-gray-50 hover:border-orange-100 hover:bg-orange-50/30 transition-all">
+            <div class="w-12 h-12 bg-green-100 text-green-500 rounded-xl flex items-center justify-center"><iconify-icon icon="ph:chart-line-up-bold" width="24"></iconify-icon></div>
+            <div class="flex-grow"><h4 class="text-sm font-bold text-gray-800">2024年第一季度总结</h4><p class="text-[10px] text-gray-400">PDF · 4.8 MB · 04月01日</p></div>
+            <button id="download-pdf-2" class="relative z-10 text-gray-300 hover:text-green-500 flex items-center justify-center w-8 h-8" style="pointer-events: auto;"><iconify-icon icon="ph:download-simple-bold" width="20"></iconify-icon></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 通知设置/隐私安全按钮 -->
+      <div class="grid grid-cols-2 gap-4">
+        <button id="notification-settings-btn" class="bg-white p-4 rounded-[24px] border border-orange-50 card-shadow hover:bg-orange-50 flex flex-col items-center gap-2"><iconify-icon class="text-gray-400" icon="ph:bell-bold" width="24"></iconify-icon><span class="text-xs font-bold">通知设置</span></button>
+        <button id="privacy-settings-btn" class="bg-white p-4 rounded-[24px] border border-orange-50 card-shadow hover:bg-orange-50 flex flex-col items-center gap-2"><iconify-icon class="text-gray-400" icon="ph:shield-check-bold" width="24"></iconify-icon><span class="text-xs font-bold">隐私安全</span></button>
+      </div>
+      <button id="logout-btn" class="w-full py-4 text-xs font-bold text-red-400 hover:text-red-500 transition-colors uppercase tracking-widest bg-white rounded-[24px] border border-orange-50 card-shadow">退出当前账号</button>
+    </div>
+  </div>
+</main>
+
+<footer class="bg-white border-t border-orange-50 py-12 px-4 md:px-8 mt-12 mb-[84px] md:mb-0">
+  <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+    <div class="flex flex-col items-center md:items-start gap-4"><div class="flex items-center gap-2"><div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-white"><iconify-icon icon="ph:paw-print-fill" width="18"></iconify-icon></div><span class="text-lg font-bold text-gray-800">PetMind</span></div><p class="text-xs text-gray-400">© 2026 PetMind 智能宠物健康管理平台. All rights reserved.</p></div>
+    <div class="flex gap-8"><a class="text-xs text-gray-500 hover:text-orange-500" href="#">用户协议</a><a class="text-xs text-gray-500 hover:text-orange-500" href="#">隐私政策</a><a class="text-xs text-gray-500 hover:text-orange-500" href="#">联系我们</a></div>
+  </div>
+</footer>
+
+<!-- 移动端底部导航 -->
+<div class="md:hidden fixed bottom-0 left-0 right-0 h-[84px] bg-white/80 backdrop-blur-xl border-t border-orange-50 px-2 flex justify-between items-center pb-6 z-50">
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="index.html"><iconify-icon icon="ph:house-bold" width="22"></iconify-icon><span class="text-[9px] font-bold">首页</span></a>
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="behavior.html"><iconify-icon icon="ph:dog-bold" width="22"></iconify-icon><span class="text-[9px] font-bold">行为感知</span></a>
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="health.html"><iconify-icon icon="ph:heartbeat-bold" width="22"></iconify-icon><span class="text-[9px] font-bold">健康管家</span></a>
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="social.html"><iconify-icon icon="ph:users-three-bold" width="22"></iconify-icon><span class="text-[9px] font-bold">宠友圈</span></a>
+  <a class="flex flex-col items-center gap-1 text-orange-500 flex-1" href="personal.html"><iconify-icon icon="ph:user-circle-fill" width="22"></iconify-icon><span class="text-[9px] font-bold">我的</span></a>
+</div>
+
+<!-- ==================== 弹窗容器 ==================== -->
+
+<!-- 编辑资料弹窗 -->
+<div id="edit-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 hidden">
+  <div class="absolute inset-0 modal-overlay"></div>
+  <div class="relative bg-white rounded-[32px] w-full max-w-md p-6 card-shadow border border-orange-50 z-10">
+    <div class="flex justify-between items-start mb-6"><h3 class="text-lg font-bold">编辑个人资料</h3><button id="close-edit-modal" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500"><iconify-icon icon="ph:x-bold" width="16"></iconify-icon></button></div>
+    <div class="space-y-4">
+      <div class="flex items-center gap-4"><img id="edit-avatar-preview" class="w-16 h-16 rounded-full object-cover border-2 border-orange-100" src=""/><label class="px-4 py-2 bg-orange-50 text-orange-500 text-xs font-bold rounded-xl cursor-pointer">更换头像<input id="edit-avatar-input" type="file" accept="image/*" class="hidden"/></label></div>
+      <div><label class="text-xs text-gray-500">昵称</label><input id="edit-name" class="w-full mt-1 px-4 py-2 rounded-xl border border-gray-200 text-sm" value="张三 (Zack)"/></div>
+      <div><label class="text-xs text-gray-500">个人简介</label><textarea id="edit-bio" class="w-full mt-1 px-4 py-2 rounded-xl border border-gray-200 text-sm h-20">热爱生活的猫犬双全用户，致力于通过 AI 技术为宠物提供更好的生活环境。已加入 PetMind 428 天。</textarea></div>
+      <button id="save-profile" class="w-full py-3 btn-primary rounded-2xl font-bold text-sm">保存修改</button>
+    </div>
+  </div>
+</div>
+
+<!-- 账户安全弹窗 -->
+<div id="security-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 hidden">
+  <div class="absolute inset-0 modal-overlay"></div>
+  <div class="relative bg-white rounded-[32px] w-full max-w-md p-6 card-shadow border border-orange-50 z-10">
+    <div class="flex justify-between items-start mb-6"><h3 class="text-lg font-bold">账户安全</h3><button id="close-security-modal" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500"><iconify-icon icon="ph:x-bold" width="16"></iconify-icon></button></div>
+    <div class="space-y-4">
+      <p class="text-xs text-gray-500 font-medium">当前登录设备</p>
+      <div class="bg-gray-50 rounded-2xl p-4 flex items-center gap-4"><iconify-icon icon="ph:device-mobile-bold" class="text-gray-400" width="24"></iconify-icon><div class="flex-grow"><p class="text-sm font-bold">iPhone 14 Pro</p><p class="text-[10px] text-gray-400">Safari · 成都 · 刚刚活跃</p></div><span class="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded-full">当前设备</span></div>
+      <div class="bg-gray-50 rounded-2xl p-4 flex items-center gap-4"><iconify-icon icon="ph:laptop-bold" class="text-gray-400" width="24"></iconify-icon><div class="flex-grow"><p class="text-sm font-bold">MacBook Pro</p><p class="text-[10px] text-gray-400">Chrome · 成都 · 3小时前</p></div><button class="text-[10px] text-red-400 font-bold">退出</button></div>
+      <button class="w-full py-3 bg-red-50 text-red-500 rounded-2xl font-bold text-sm">退出所有设备</button>
+    </div>
+  </div>
+</div>
+
+<!-- 添加共享成员弹窗 -->
+<div id="add-member-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 hidden">
+  <div class="absolute inset-0 modal-overlay"></div>
+  <div class="relative bg-white rounded-[32px] w-full max-w-md p-6 card-shadow border border-orange-50 z-10">
+    <div class="flex justify-between items-start mb-6"><h3 class="text-lg font-bold">添加共享成员</h3><button id="close-add-member-modal" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500"><iconify-icon icon="ph:x-bold" width="16"></iconify-icon></button></div>
+    <div class="space-y-4">
+      <div><label class="text-xs text-gray-500">头像</label><div class="flex items-center gap-3 mt-1"><img id="new-member-avatar-preview" class="w-12 h-12 rounded-full bg-gray-100 object-cover" src="https://modao.cc/agent-py/media/generated_images/2026-05-03/default_avatar.jpg"/><label class="px-3 py-1 bg-orange-50 text-orange-500 text-xs rounded-xl cursor-pointer">上传<input id="new-member-avatar-input" type="file" accept="image/*" class="hidden"/></label></div></div>
+      <div><label class="text-xs text-gray-500">姓名</label><input id="new-member-name" class="w-full mt-1 px-4 py-2 rounded-xl border border-gray-200 text-sm" placeholder="例如：李四"/></div>
+      <div><label class="text-xs text-gray-500">权限</label><select id="new-member-role" class="w-full mt-1 px-4 py-2 rounded-xl border border-gray-200 text-sm"><option value="完全控制">完全控制</option><option value="仅查看">仅查看</option></select></div>
+      <div><label class="text-xs text-gray-500">有效期限</label><input id="new-member-expiry" type="date" class="w-full mt-1 px-4 py-2 rounded-xl border border-gray-200 text-sm"/></div>
+      <button id="confirm-add-member" class="w-full py-3 btn-primary rounded-2xl font-bold text-sm">确认添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- 成员操作菜单（居中弹出） -->
+<div id="member-action-menu" class="fixed inset-0 z-[110] flex items-center justify-center p-4 hidden">
+  <div class="absolute inset-0 bg-black/20" id="close-menu-overlay"></div>
+  <div class="relative bg-white rounded-[32px] w-full max-w-xs p-6 card-shadow border border-orange-50 z-10">
+    <h4 id="menu-member-name" class="font-bold mb-4">成员操作</h4>
+    <div class="space-y-2">
+      <button id="edit-member-btn" class="w-full text-left px-4 py-3 bg-gray-50 rounded-xl text-sm">修改权限/有效期</button>
+      <button id="delete-member-btn" class="w-full text-left px-4 py-3 bg-red-50 text-red-500 rounded-xl text-sm">删除成员</button>
+      <button id="close-menu-btn" class="w-full text-center py-2 text-sm text-gray-400 mt-2">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 修改共享成员弹窗 -->
+<div id="edit-member-modal" class="fixed inset-0 z-[120] flex items-center justify-center p-4 hidden">
+  <div class="absolute inset-0 modal-overlay"></div>
+  <div class="relative bg-white rounded-[32px] w-full max-w-md p-6 card-shadow border border-orange-50 z-10">
+    <div class="flex justify-between items-start mb-6"><h3 class="text-lg font-bold">修改共享成员</h3><button id="close-edit-member-modal" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"><iconify-icon icon="ph:x-bold" width="16"></iconify-icon></button></div>
+    <div class="space-y-4"><div><label class="text-xs text-gray-500">权限</label><select id="edit-member-role" class="w-full mt-1 px-4 py-2 rounded-xl border border-gray-200 text-sm"><option value="完全控制">完全控制</option><option value="仅查看">仅查看</option></select></div><div><label class="text-xs text-gray-500">有效期限</label><input id="edit-member-expiry" type="date" class="w-full mt-1 px-4 py-2 rounded-xl border border-gray-200 text-sm"/></div><button id="save-member-edit" class="w-full py-3 btn-primary rounded-2xl font-bold text-sm">保存</button></div>
+  </div>
+</div>
+
+<!-- 添加/编辑宠物弹窗 -->
+<div id="pet-form-modal" class="fixed inset-0 z-[130] flex items-center justify-center p-4 hidden">
+  <div class="absolute inset-0 modal-overlay"></div>
+  <div class="relative bg-white rounded-[32px] w-full max-w-md p-6 card-shadow border border-orange-50 z-10 max-h-[90vh] overflow-y-auto no-scrollbar">
+    <div class="flex justify-between items-start mb-6"><h3 id="pet-form-title" class="text-lg font-bold">添加宠物</h3><button id="close-pet-form-modal" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"><iconify-icon icon="ph:x-bold" width="16"></iconify-icon></button></div>
+    <div class="space-y-4">
+      <div><label class="text-xs text-gray-500">头像</label><div class="flex items-center gap-3 mt-1"><img id="pet-avatar-preview" class="w-16 h-16 rounded-2xl object-cover border border-orange-100" src=""/><label class="px-3 py-1 bg-orange-50 text-orange-500 text-xs rounded-xl cursor-pointer">上传<input id="pet-avatar-input" type="file" accept="image/*" class="hidden"/></label></div></div>
+      <div><label class="text-xs text-gray-500">名称</label><input id="pet-name" class="w-full mt-1 px-4 py-2 rounded-xl border border-gray-200 text-sm" placeholder="例如：大黄"/></div>
+      <div><label class="text-xs text-gray-500">类别</label><input id="pet-species" class="w-full mt-1 px-4 py-2 rounded-xl border border-gray-200 text-sm" placeholder="例如：中华田园犬"/></div>
+      <div class="grid grid-cols-2 gap-4"><div><label class="text-xs text-gray-500">年龄</label><input id="pet-age" class="w-full mt-1 px-4 py-2 rounded-xl border border-gray-200 text-sm" placeholder="3岁"/></div><div><label class="text-xs text-gray-500">性别</label><select id="pet-gender" class="w-full mt-1 px-4 py-2 rounded-xl border border-gray-200 text-sm"><option value="雄性">雄性</option><option value="雌性">雌性</option></select></div></div>
+      <div class="grid grid-cols-2 gap-4"><div><label class="text-xs text-gray-500">体重</label><input id="pet-weight" class="w-full mt-1 px-4 py-2 rounded-xl border border-gray-200 text-sm" placeholder="12.5kg"/></div><div><label class="text-xs text-gray-500">最后体检日期</label><input id="pet-checkup" type="date" class="w-full mt-1 px-4 py-2 rounded-xl border border-gray-200 text-sm"/></div></div>
+      <button id="save-pet-btn" class="w-full py-3 btn-primary rounded-2xl font-bold text-sm">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 宠物操作菜单（居中弹出） -->
+<div id="pet-action-menu" class="fixed inset-0 z-[140] flex items-center justify-center p-4 hidden">
+  <div class="absolute inset-0 bg-black/20" id="close-pet-menu-overlay"></div>
+  <div class="relative bg-white rounded-[32px] w-full max-w-xs p-6 card-shadow border border-orange-50 z-10">
+    <h4 id="pet-menu-name" class="font-bold mb-4">操作</h4>
+    <div class="space-y-2">
+      <button id="edit-pet-btn" class="w-full text-left px-4 py-3 bg-gray-50 rounded-xl text-sm">修改信息</button>
+      <button id="delete-pet-btn" class="w-full text-left px-4 py-3 bg-red-50 text-red-500 rounded-xl text-sm">删除宠物</button>
+      <button id="close-pet-menu-btn" class="w-full text-center py-2 text-sm text-gray-400 mt-2">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 通知设置弹窗 -->
+<div id="notification-modal" class="fixed inset-0 z-[150] flex items-center justify-center p-4 hidden">
+  <div class="absolute inset-0 modal-overlay"></div>
+  <div class="relative bg-white rounded-[32px] w-full max-w-md p-6 card-shadow border border-orange-50 z-10">
+    <div class="flex justify-between items-start mb-6"><h3 class="text-lg font-bold">通知设置</h3><button id="close-notification-modal" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"><iconify-icon icon="ph:x-bold" width="16"></iconify-icon></button></div>
+    <div class="space-y-5">
+      <div class="flex items-center justify-between"><div><p class="text-sm font-bold">推送通知</p><p class="text-[10px] text-gray-400">接收健康提醒、行为预警等推送</p></div><div class="w-12 h-6 toggle-on bg-orange-500 rounded-full relative cursor-pointer" onclick="toggleSwitch(this)"><div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full toggle-circle"></div></div></div>
+      <div class="flex items-center justify-between"><div><p class="text-sm font-bold">声音</p><p class="text-[10px] text-gray-400">通知时播放提示音</p></div><div class="w-12 h-6 toggle-on bg-orange-500 rounded-full relative cursor-pointer" onclick="toggleSwitch(this)"><div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full toggle-circle"></div></div></div>
+      <div class="flex items-center justify-between"><div><p class="text-sm font-bold">振动</p><p class="text-[10px] text-gray-400">接收通知时振动</p></div><div class="w-12 h-6 toggle-off bg-gray-200 rounded-full relative cursor-pointer" onclick="toggleSwitch(this)"><div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full toggle-circle"></div></div></div>
+      <div class="flex items-center justify-between"><div><p class="text-sm font-bold">社区动态</p><p class="text-[10px] text-gray-400">宠友圈点赞、评论提醒</p></div><div class="w-12 h-6 toggle-on bg-orange-500 rounded-full relative cursor-pointer" onclick="toggleSwitch(this)"><div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full toggle-circle"></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 隐私安全弹窗（已修改：删除导出数据，删除账号与数据改为注销账号） -->
+<div id="privacy-modal" class="fixed inset-0 z-[150] flex items-center justify-center p-4 hidden">
+  <div class="absolute inset-0 modal-overlay"></div>
+  <div class="relative bg-white rounded-[32px] w-full max-w-md p-6 card-shadow border border-orange-50 z-10">
+    <div class="flex justify-between items-start mb-6"><h3 class="text-lg font-bold">隐私安全</h3><button id="close-privacy-modal" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"><iconify-icon icon="ph:x-bold" width="16"></iconify-icon></button></div>
+    <div class="space-y-5">
+      <div class="flex items-center justify-between"><div><p class="text-sm font-bold">账号隐私</p><p class="text-[10px] text-gray-400">允许其他用户通过手机号搜索到我</p></div><div class="w-12 h-6 toggle-on bg-orange-500 rounded-full relative cursor-pointer" onclick="toggleSwitch(this)"><div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full toggle-circle"></div></div></div>
+      <div class="flex items-center justify-between"><div><p class="text-sm font-bold">数据共享</p><p class="text-[10px] text-gray-400">匿名化健康数据用于产品改进</p></div><div class="w-12 h-6 toggle-on bg-orange-500 rounded-full relative cursor-pointer" onclick="toggleSwitch(this)"><div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full toggle-circle"></div></div></div>
+      <div class="flex items-center justify-between"><div><p class="text-sm font-bold">位置信息</p><p class="text-[10px] text-gray-400">记录遛宠轨迹以生成活动报告</p></div><div class="w-12 h-6 toggle-off bg-gray-200 rounded-full relative cursor-pointer" onclick="toggleSwitch(this)"><div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full toggle-circle"></div></div></div>
+      <div class="pt-3 border-t border-gray-100">
+        <button class="w-full text-left px-4 py-3 bg-red-50 text-red-500 rounded-xl text-sm hover:bg-red-100">注销账号</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 隐藏的 PDF 报告内容 (修复宽度、单列布局) -->
+<div style="display: none;">
+  <!-- 四月健康月报 -->
+  <div id="report-april-health" style="font-family: 'Noto Sans SC', sans-serif; padding: 40px; background: white; color: #333;">
+    <h1 style="color: #FF8D6C; margin-bottom: 10px; font-size: 24px;">2024年4月健康月报</h1>
+    <p style="color: #888; font-size: 14px;">生成日期：2026年05月01日</p>
+    <hr style="border: 1px solid #eee; margin: 20px 0;"/>
+    <h2 style="color: #555; font-size: 18px;">宠物：大黄（旺财）</h2>
+    <p style="font-size: 14px;">中华田园犬 · 3岁 · 雄性</p>
+    <div style="background: #fff5f0; padding: 15px; border-radius: 12px; margin: 15px 0;">
+      <strong style="font-size: 15px;">📊 体重详细记录</strong><br/>
+      <span style="font-size: 13px;">4月1日：12.3kg | 4月7日：12.4kg | 4月14日：12.5kg | 4月21日：12.5kg | 4月30日：12.5kg</span><br/>
+      <span style="font-size: 13px;">体重增长 0.2kg，曲线平稳，处于理想范围内（标准 12-14kg）。</span>
+    </div>
+    <div style="margin: 15px 0;">
+      <strong style="font-size: 15px;">🍖 饮食摄入明细</strong><br/>
+      <span style="font-size: 13px;">日均干粮：285g (蛋白质 ≥28%)</span><br/>
+      <span style="font-size: 13px;">日均湿粮：80g (主食罐头)</span><br/>
+      <span style="font-size: 13px;">零食：每周3次，以胡萝卜棒、冻干蛋黄为主</span><br/>
+      <span style="font-size: 13px;">饮水量：450ml/天，达成推荐量56%，建议添加流水喷泉以增加饮水欲望。</span>
+    </div>
+    <div style="margin: 15px 0;">
+      <strong style="font-size: 15px;">💤 睡眠质量</strong><br/>
+      <span style="font-size: 13px;">日均睡眠 14.2h，其中深度睡眠 9.5h，较3月提升 0.4h。</span><br/>
+      <span style="font-size: 13px;">夜间苏醒次数：平均 1.2 次/晚，显著低于上月（2.1 次），睡眠连续性改善。</span>
+    </div>
+    <div style="margin: 15px 0;">
+      <strong style="font-size: 15px;">❤️ 健康评分与活动</strong><br/>
+      <span style="font-size: 13px;">月初健康评分 89，月末升至 94，提升 5 分，超过 92% 同类犬只。</span><br/>
+      <span style="font-size: 13px;">日均步数：8,420 步，较3月增加 620 步；活跃时间集中在早晨 6:30-7:30 和傍晚 17:00-18:30。</span>
+    </div>
+    <div style="margin: 15px 0;">
+      <strong style="font-size: 15px;">🩺 医疗与护理</strong><br/>
+      <span style="font-size: 13px;">4月12日完成年度体检，体重 12.5kg，体温 38.3℃，心肺听诊正常。</span><br/>
+      <span style="font-size: 13px;">耳道清洁每周一次，未出现真菌或异味。</span><br/>
+      <span style="font-size: 13px;">牙齿检查：轻度牙垢，建议增加磨牙零食频率。</span>
+    </div>
+    <div style="margin-top: 25px; border-top: 2px solid #FF8D6C; padding-top: 15px;">
+      <strong style="color: #FF8D6C; font-size: 15px;">📋 5月护理建议</strong><br/>
+      <span style="font-size: 13px;">• 逐步增加湿粮比例至 30%，辅助补水。</span><br/>
+      <span style="font-size: 13px;">• 每周户外运动时间增至 5 小时，分散到每日 40 分钟以上。</span><br/>
+      <span style="font-size: 13px;">• 5月15日安排狂犬疫苗加强针，届时进行社会化训练。</span>
+    </div>
+  </div>
+
+  <!-- 第一季度总结（改为上下排列） -->
+  <div id="report-q1-summary" style="font-family: 'Noto Sans SC', sans-serif; padding: 40px; background: white; color: #333;">
+    <h1 style="color: #4CAF50; margin-bottom: 10px; font-size: 24px;">2024年第一季度总结</h1>
+    <p style="color: #888; font-size: 14px;">生成日期：2026年04月01日</p>
+    <hr style="border: 1px solid #eee; margin: 20px 0;"/>
+    <h2 style="color: #555; font-size: 18px;">整体健康趋势</h2>
+    <p style="font-size: 14px;">健康评分从1月的85分稳步上升至3月的92分，得益于系统化运动管理和饮食微调。</p>
+    <div style="margin: 20px 0;">
+      <strong style="font-size: 15px;">🏃 运动步数汇总</strong><br/>
+      <span style="font-size: 13px;">1月：6,200 步/天 (183,000步)</span><br/>
+      <span style="font-size: 13px;">2月：7,800 步/天 (218,400步)</span><br/>
+      <span style="font-size: 13px;">3月：8,400 步/天 (260,400步)</span>
+    </div>
+    <div style="margin: 20px 0;">
+      <strong style="font-size: 15px;">😴 睡眠趋势</strong><br/>
+      <span style="font-size: 13px;">1月日均深度睡眠 8.8h</span><br/>
+      <span style="font-size: 13px;">2月 9.1h | 3月 9.2h</span><br/>
+      <span style="font-size: 13px;">整体提升 0.4h，睡眠效率提升 6%。</span>
+    </div>
+    <div style="margin: 15px 0;">
+      <strong style="font-size: 15px;">⚖️ 体重变化</strong><br/>
+      <span style="font-size: 13px;">1月1日：11.9kg → 3月31日：12.5kg（+0.6kg），符合控制范围内。</span><br/>
+      <span style="font-size: 13px;">每月平均增重 0.2kg，营养配比正常。</span>
+    </div>
+    <div style="margin: 15px 0;">
+      <strong style="font-size: 15px;">🩺 医疗记录</strong><br/>
+      <span style="font-size: 13px;">1月：年度疫苗加强（犬五联），无不良反应。</span><br/>
+      <span style="font-size: 13px;">2月：常规驱虫（体内+体外），粪便检查正常。</span><br/>
+      <span style="font-size: 13px;">3月：耳道清洁与皮肤检查，无异常。</span>
+    </div>
+    <div style="margin: 15px 0;">
+      <strong style="font-size: 15px;">📋 第二季度重点关注</strong><br/>
+      <span style="font-size: 13px;">• 5月15日接种狂犬疫苗，提前3天减少剧烈运动。</span><br/>
+      <span style="font-size: 13px;">• 加强夏季防暑措施，监控饮水量，目标提升至 600ml/天。</span><br/>
+      <span style="font-size: 13px;">• 引入每周一次的益智训练，持续丰富精神刺激。</span>
+    </div>
+  </div>
+</div>
+
+<!-- 引入 html2pdf.js 与 docx.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://unpkg.com/docx@7.1.0/build/index.umd.js"></script>
+
+<!-- ==================== 完整脚本 ==================== -->
+<script>
+  (function() {
+    // 通用开关切换
+    window.toggleSwitch = function(el) {
+      const circle = el.querySelector('.toggle-circle');
+      if (el.classList.contains('toggle-on')) {
+        el.classList.remove('toggle-on', 'bg-orange-500');
+        el.classList.add('toggle-off', 'bg-gray-200');
+        circle.classList.remove('right-1');
+        circle.classList.add('left-1');
+      } else {
+        el.classList.remove('toggle-off', 'bg-gray-200');
+        el.classList.add('toggle-on', 'bg-orange-500');
+        circle.classList.remove('left-1');
+        circle.classList.add('right-1');
+      }
+    };
+
+    // ----- 状态数据 -----
+    let currentMembers = [
+      { id: 1, name: '李好 (妈妈)', avatar: '16.jpg', role: '完全控制', expiry: '永久有效' },
+      { id: 2, name: '丽丽 (邻居)', avatar: '17.jpg', role: '仅查看', expiry: '至05-15' }
+    ];
+    let selectedMemberId = null;
+    let pets = [
+      { id: 1, name: '大黄 (旺财)', species: '中华田园犬', age: '3岁', gender: '雄性', weight: '12.5kg', lastCheckup: '2023-04-12', avatar: 'https://modao.cc/agent-py/media/generated_images/2026-05-03/6c6f51441c9a4f93adda68d8eff86f20.jpg#desc=Pet%201', isPrimary: true },
+      { id: 2, name: '咪咪', species: '英国短毛猫', age: '2岁', gender: '雌性', weight: '4.2kg', lastCheckup: '2024-01-05', avatar: 'https://modao.cc/agent-py/media/generated_images/2026-05-03/e0e679f8065646b182b90a9b6d46416d.jpg#desc=Pet%202', isPrimary: false }
+    ];
+    let editingPetId = null;
+
+    const profileAvatar = document.getElementById('profile-avatar');
+    const navAvatarImg = document.getElementById('nav-avatar-img');
+    const displayName = document.getElementById('display-name');
+    const displayBio = document.getElementById('display-bio');
+    const memberCountEl = document.getElementById('member-count');
+    const guardianList = document.getElementById('guardian-list');
+    const petsContainer = document.getElementById('pets-container');
+
+    // ----- 宠物档案渲染及交互 -----
+    function renderPets() {
+      petsContainer.innerHTML = '';
+      const sortedPets = [...pets].sort((a,b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
+      sortedPets.forEach(pet => {
+        const card = document.createElement('div');
+        card.className = 'group relative bg-white rounded-[24px] p-5 border border-orange-50 hover:border-orange-200 transition-all';
+        card.innerHTML = `
+          <div class="flex items-center gap-4">
+            <img class="w-16 h-16 rounded-2xl object-cover shadow-sm" src="${pet.avatar}"/>
+            <div class="flex-grow">
+              <div class="flex items-center justify-between">
+                <h4 class="font-bold text-gray-800">${pet.name}</h4>
+                ${pet.isPrimary ? '<span class="text-[10px] bg-orange-500 text-white px-2 py-0.5 rounded-full">主宠</span>' : `<button data-set-primary="${pet.id}" class="text-[10px] text-gray-400 hover:text-orange-500 underline">设为当前</button>`}
+              </div>
+              <p class="text-xs text-gray-500 mt-1">${pet.species} · ${pet.age} · ${pet.gender}</p>
+            </div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-orange-100/50 flex justify-between items-center">
+            <div class="flex gap-4"><div class="text-center"><p class="text-xs font-bold text-gray-700">${pet.weight}</p><p class="text-[9px] text-gray-400">体重</p></div><div class="text-center border-l border-orange-100/50 pl-4"><p class="text-xs font-bold text-gray-700">${pet.lastCheckup}</p><p class="text-[9px] text-gray-400">最后体检</p></div></div>
+            <button data-pet-menu="${pet.id}" class="w-8 h-8 rounded-lg bg-white border border-orange-100 flex items-center justify-center text-gray-400 hover:text-orange-500"><iconify-icon icon="ph:pencil-simple-bold"></iconify-icon></button>
+          </div>`;
+        petsContainer.appendChild(card);
+      });
+      // 绑定设为当前事件
+      document.querySelectorAll('[data-set-primary]').forEach(btn => btn.addEventListener('click', () => {
+        const id = parseInt(btn.getAttribute('data-set-primary'));
+        pets.forEach(p => p.isPrimary = (p.id === id));
+        renderPets();
+      }));
+      // 绑定铅笔按钮
+      document.querySelectorAll('[data-pet-menu]').forEach(btn => btn.addEventListener('click', () => {
+        editingPetId = parseInt(btn.getAttribute('data-pet-menu'));
+        const pet = pets.find(p => p.id === editingPetId);
+        if(pet) {
+          document.getElementById('pet-menu-name').textContent = pet.name;
+          document.getElementById('pet-action-menu').classList.remove('hidden');
+        }
+      }));
+    }
+
+    // 添加宠物按钮
+    document.getElementById('add-pet-btn').addEventListener('click', () => {
+      editingPetId = null;
+      document.getElementById('pet-form-title').textContent = '添加宠物';
+      document.getElementById('pet-avatar-preview').src = 'https://modao.cc/agent-py/media/generated_images/2026-05-03/default_pet_avatar.jpg';
+      ['pet-name','pet-species','pet-age','pet-weight','pet-checkup'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('pet-gender').value = '雄性';
+      document.getElementById('pet-form-modal').classList.remove('hidden');
+    });
+    document.getElementById('close-pet-form-modal').addEventListener('click', () => document.getElementById('pet-form-modal').classList.add('hidden'));
+    document.getElementById('pet-avatar-input').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if(file) { const r = new FileReader(); r.onload = ev => document.getElementById('pet-avatar-preview').src = ev.target.result; r.readAsDataURL(file); }
+    });
+    document.getElementById('save-pet-btn').addEventListener('click', () => {
+      const name = document.getElementById('pet-name').value.trim();
+      if(!name) return alert('请输入名称');
+      const data = {
+        name, species: document.getElementById('pet-species').value.trim()||'未知', age: document.getElementById('pet-age').value.trim()||'未知',
+        gender: document.getElementById('pet-gender').value, weight: document.getElementById('pet-weight').value.trim()||'未知',
+        lastCheckup: document.getElementById('pet-checkup').value||'未记录', avatar: document.getElementById('pet-avatar-preview').src
+      };
+      if(editingPetId !== null) {
+        const pet = pets.find(p => p.id === editingPetId);
+        if(pet) Object.assign(pet, data);
+      } else {
+        const newId = pets.length ? Math.max(...pets.map(p=>p.id))+1 : 1;
+        pets.push({id: newId, ...data, isPrimary: false});
+      }
+      renderPets();
+      document.getElementById('pet-form-modal').classList.add('hidden');
+    });
+    // 宠物操作菜单
+    document.getElementById('close-pet-menu-overlay').addEventListener('click', () => document.getElementById('pet-action-menu').classList.add('hidden'));
+    document.getElementById('close-pet-menu-btn').addEventListener('click', () => document.getElementById('pet-action-menu').classList.add('hidden'));
+    document.getElementById('edit-pet-btn').addEventListener('click', () => {
+      if(editingPetId !== null) {
+        const pet = pets.find(p => p.id === editingPetId);
+        if(pet) {
+          document.getElementById('pet-form-title').textContent = '修改宠物信息';
+          document.getElementById('pet-avatar-preview').src = pet.avatar;
+          document.getElementById('pet-name').value = pet.name;
+          document.getElementById('pet-species').value = pet.species;
+          document.getElementById('pet-age').value = pet.age;
+          document.getElementById('pet-gender').value = pet.gender;
+          document.getElementById('pet-weight').value = pet.weight;
+          document.getElementById('pet-checkup').value = pet.lastCheckup !== '未记录' ? pet.lastCheckup : '';
+          document.getElementById('pet-form-modal').classList.remove('hidden');
+          document.getElementById('pet-action-menu').classList.add('hidden');
+        }
+      }
+    });
+    document.getElementById('delete-pet-btn').addEventListener('click', () => {
+      if(editingPetId !== null) { pets = pets.filter(p => p.id !== editingPetId); renderPets(); document.getElementById('pet-action-menu').classList.add('hidden'); }
+    });
+
+    // ----- 共享成员渲染及交互 -----
+    function renderMembers() {
+      guardianList.innerHTML = '';
+      currentMembers.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-3 p-3 rounded-2xl hover:bg-orange-50 transition-colors';
+        div.innerHTML = `<img class="w-12 h-12 rounded-full object-cover" src="${m.avatar}"/><div class="flex-grow"><h4 class="text-sm font-bold">${m.name}</h4><div class="flex items-center gap-2 mt-0.5"><span class="text-[10px] ${m.role==='完全控制'?'text-green-600 bg-green-50':'text-blue-600 bg-blue-50'} px-1.5 py-0.5 rounded">${m.role}</span><span class="text-[10px] text-gray-400">${m.expiry}</span></div></div><button data-member-id="${m.id}" class="member-menu-btn text-gray-300 hover:text-gray-500"><iconify-icon icon="ph:dots-three-vertical-bold" width="20"></iconify-icon></button>`;
+        guardianList.appendChild(div);
+      });
+      memberCountEl.textContent = currentMembers.length + 1;
+      document.querySelectorAll('.member-menu-btn').forEach(btn => btn.addEventListener('click', () => {
+        selectedMemberId = parseInt(btn.getAttribute('data-member-id'));
+        const member = currentMembers.find(m => m.id === selectedMemberId);
+        if(member) { document.getElementById('menu-member-name').textContent = member.name; document.getElementById('member-action-menu').classList.remove('hidden'); }
+      }));
+    }
+
+    document.getElementById('add-member-btn').addEventListener('click', () => document.getElementById('add-member-modal').classList.remove('hidden'));
+    document.getElementById('close-add-member-modal').addEventListener('click', () => document.getElementById('add-member-modal').classList.add('hidden'));
+    document.getElementById('new-member-avatar-input').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if(file) { const r = new FileReader(); r.onload = ev => document.getElementById('new-member-avatar-preview').src = ev.target.result; r.readAsDataURL(file); }
+    });
+    document.getElementById('confirm-add-member').addEventListener('click', () => {
+      const name = document.getElementById('new-member-name').value.trim();
+      if(!name) return alert('请输入姓名');
+      const role = document.getElementById('new-member-role').value;
+      const exp = document.getElementById('new-member-expiry').value;
+      const newId = currentMembers.length ? Math.max(...currentMembers.map(m=>m.id))+1 : 1;
+      currentMembers.push({ id: newId, name, avatar: document.getElementById('new-member-avatar-preview').src, role, expiry: exp ? `至${exp}` : '永久有效' });
+      renderMembers();
+      document.getElementById('add-member-modal').classList.add('hidden');
+      document.getElementById('new-member-name').value = ''; document.getElementById('new-member-expiry').value = '';
+    });
+    document.getElementById('close-menu-overlay').addEventListener('click', () => document.getElementById('member-action-menu').classList.add('hidden'));
+    document.getElementById('close-menu-btn').addEventListener('click', () => document.getElementById('member-action-menu').classList.add('hidden'));
+    document.getElementById('delete-member-btn').addEventListener('click', () => {
+      if(selectedMemberId) { currentMembers = currentMembers.filter(m => m.id !== selectedMemberId); renderMembers(); document.getElementById('member-action-menu').classList.add('hidden'); }
+    });
+    document.getElementById('edit-member-btn').addEventListener('click', () => {
+      const member = currentMembers.find(m => m.id === selectedMemberId);
+      if(member) {
+        document.getElementById('edit-member-role').value = member.role;
+        document.getElementById('edit-member-expiry').value = member.expiry.startsWith('至') ? member.expiry.substring(2) : '';
+        document.getElementById('member-action-menu').classList.add('hidden');
+        document.getElementById('edit-member-modal').classList.remove('hidden');
+      }
+    });
+    document.getElementById('close-edit-member-modal').addEventListener('click', () => document.getElementById('edit-member-modal').classList.add('hidden'));
+    document.getElementById('save-member-edit').addEventListener('click', () => {
+      const member = currentMembers.find(m => m.id === selectedMemberId);
+      if(member) {
+        member.role = document.getElementById('edit-member-role').value;
+        const d = document.getElementById('edit-member-expiry').value;
+        member.expiry = d ? `至${d}` : '永久有效';
+        renderMembers();
+        document.getElementById('edit-member-modal').classList.add('hidden');
+      }
+    });
+
+    // ----- 个人资料编辑 -----
+    document.getElementById('camera-btn').addEventListener('click', () => document.getElementById('edit-avatar-input').click());
+    document.getElementById('edit-avatar-input').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if(file) { const r = new FileReader(); r.onload = ev => { profileAvatar.src = ev.target.result; navAvatarImg.src = ev.target.result; document.getElementById('edit-avatar-preview').src = ev.target.result; }; r.readAsDataURL(file); }
+    });
+    const editModal = document.getElementById('edit-modal');
+    document.getElementById('edit-profile-btn').addEventListener('click', () => {
+      document.getElementById('edit-avatar-preview').src = profileAvatar.src;
+      document.getElementById('edit-name').value = displayName.textContent;
+      document.getElementById('edit-bio').value = displayBio.textContent;
+      editModal.classList.remove('hidden');
+    });
+    document.getElementById('close-edit-modal').addEventListener('click', () => editModal.classList.add('hidden'));
+    document.getElementById('save-profile').addEventListener('click', () => {
+      displayName.textContent = document.getElementById('edit-name').value;
+      displayBio.textContent = document.getElementById('edit-bio').value;
+      editModal.classList.add('hidden');
+    });
+
+    const securityModal = document.getElementById('security-modal');
+    document.getElementById('account-security-btn').addEventListener('click', () => securityModal.classList.remove('hidden'));
+    document.getElementById('close-security-modal').addEventListener('click', () => securityModal.classList.add('hidden'));
+
+    // 通知 & 隐私弹窗
+    const notificationModal = document.getElementById('notification-modal');
+    const privacyModal = document.getElementById('privacy-modal');
+    document.getElementById('notification-settings-btn').addEventListener('click', () => notificationModal.classList.remove('hidden'));
+    document.getElementById('close-notification-modal').addEventListener('click', () => notificationModal.classList.add('hidden'));
+    document.getElementById('privacy-settings-btn').addEventListener('click', () => privacyModal.classList.remove('hidden'));
+    document.getElementById('close-privacy-modal').addEventListener('click', () => privacyModal.classList.add('hidden'));
+
+    // 活动量开关
+    const activityToggle = document.getElementById('activity-toggle');
+    const activityText = document.getElementById('activity-toggle-text');
+    activityToggle.addEventListener('click', function(e) {
+      toggleSwitch(this);
+      activityText.textContent = this.classList.contains('toggle-on') ? '已开启' : '已关闭';
+      activityText.classList.toggle('text-orange-500', this.classList.contains('toggle-on'));
+      activityText.classList.toggle('text-gray-400', !this.classList.contains('toggle-on'));
+    });
+
+    // 遮罩关闭
+    document.querySelectorAll('.modal-overlay, .absolute.inset-0.bg-black\\/20').forEach(overlay => overlay.addEventListener('click', function() {
+      this.closest('.fixed').classList.add('hidden');
+    }));
+
+    // ===== 文档真实下载功能 =====
+    function downloadPDF(containerId, fileName) {
+      const element = document.getElementById(containerId);
+      const opt = {
+        margin: 10,
+        filename: fileName + '.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, logging: false, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
+    }
+
+    async function downloadDOCX() {
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType } = window.docx;
+      const doc = new Document({
+        sections: [{
+          children: [
+            new Paragraph({ text: "行为异常专项分析报告", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { after: 300 } }),
+            new Paragraph({ children: [new TextRun({ text: "生成日期：2026-04-20", font: "SimSun", size: 22 })] }),
+            new Paragraph({ children: [new TextRun({ text: "宠物：大黄（旺财） 中华田园犬 3岁 雄性", font: "SimSun", size: 24 })], spacing: { after: 200 } }),
+            new Paragraph({ text: "一、异常行为概述", heading: HeadingLevel.HEADING_2 }),
+            new Paragraph({ children: [new TextRun({ text: "自2024年4月5日起，宠物频繁出现啃咬家具（沙发扶手、桌腿）的行为，每日发生频率约5-8次，每次持续5-15分钟，尤其在主人离家后2小时内高发。", font: "SimSun", size: 22 })], spacing: { after: 150 } }),
+            new Paragraph({ text: "二、行为数据统计", heading: HeadingLevel.HEADING_2 }),
+            new Table({
+              rows: [
+                new TableRow({ children: [new TableCell({ children: [new Paragraph({ text: "日期", bold: true, font: "SimSun", size: 22 })], width: { size: 2000, type: WidthType.DXA } }), new TableCell({ children: [new Paragraph({ text: "啃咬次数", bold: true, font: "SimSun", size: 22 })], width: { size: 2000, type: WidthType.DXA } }), new TableCell({ children: [new Paragraph({ text: "环境/情绪", bold: true, font: "SimSun", size: 22 })], width: { size: 3000, type: WidthType.DXA } })] }),
+                new TableRow({ children: [new TableCell({ children: [new Paragraph({ text: "04-05", font: "SimSun", size: 22 })] }), new TableCell({ children: [new Paragraph({ text: "7次", font: "SimSun", size: 22 })] }), new TableCell({ children: [new Paragraph({ text: "主人外出4h", font: "SimSun", size: 22 })] })] }),
+                new TableRow({ children: [new TableCell({ children: [new Paragraph({ text: "04-08", font: "SimSun", size: 22 })] }), new TableCell({ children: [new Paragraph({ text: "6次", font: "SimSun", size: 22 })] }), new TableCell({ children: [new Paragraph({ text: "早晨遛狗仅15min", font: "SimSun", size: 22 })] })] }),
+                new TableRow({ children: [new TableCell({ children: [new Paragraph({ text: "04-12", font: "SimSun", size: 22 })] }), new TableCell({ children: [new Paragraph({ text: "8次", font: "SimSun", size: 22 })] }), new TableCell({ children: [new Paragraph({ text: "全天无外出", font: "SimSun", size: 22 })] })] }),
+                new TableRow({ children: [new TableCell({ children: [new Paragraph({ text: "04-18", font: "SimSun", size: 22 })] }), new TableCell({ children: [new Paragraph({ text: "3次", font: "SimSun", size: 22 })] }), new TableCell({ children: [new Paragraph({ text: "引入益智玩具后", font: "SimSun", size: 22 })] })] })
+              ]
+            }),
+            new Paragraph({ text: "" }),
+            new Paragraph({ text: "三、原因深度分析", heading: HeadingLevel.HEADING_2 }),
+            new Paragraph({ children: [new TextRun({ text: "1. 精力过剩（主要因素）：近期因天气多雨，每日户外活动时长由40分钟骤降至15分钟，能量释放不足。", font: "SimSun", size: 22 })] }),
+            new Paragraph({ children: [new TextRun({ text: "2. 精神刺激缺乏：当前玩具多为静态，缺乏互动性，导致无聊。", font: "SimSun", size: 22 })] }),
+            new Paragraph({ children: [new TextRun({ text: "3. 换牙期遗留习惯：虽已3岁，但咀嚼需求依然强烈，需合理引导。", font: "SimSun", size: 22 })] }),
+            new Paragraph({ children: [new TextRun({ text: "4. 微量元素检测（待确认）：血清锌、铁水平略有偏低，可能加重异食倾向。", font: "SimSun", size: 22 })] }),
+            new Paragraph({ text: "" }),
+            new Paragraph({ text: "四、解决方案与执行计划", heading: HeadingLevel.HEADING_2 }),
+            new Paragraph({ children: [new TextRun({ text: "• 增加运动：每日早晚各遛狗30分钟，遇雨则在室内进行寻回游戏和嗅闻垫训练。", font: "SimSun", size: 22 })] }),
+            new Paragraph({ children: [new TextRun({ text: "• 益智玩具：引入漏食球、KONG classic，每日两次投喂部分狗粮。", font: "SimSun", size: 22 })] }),
+            new Paragraph({ children: [new TextRun({ text: "• 磨牙伴侣：提供喜马拉雅芝士棒及天然鹿角，满足咀嚼需求。", font: "SimSun", size: 22 })] }),
+            new Paragraph({ children: [new TextRun({ text: "• 医疗跟进：5月5日复查微量元素，若持续偏低考虑补充剂。", font: "SimSun", size: 22 })] }),
+            new Paragraph({ text: "" }),
+            new Paragraph({ children: [new TextRun({ text: "五、跟踪评估", bold: true, font: "SimSun", size: 22 })] }),
+            new Paragraph({ children: [new TextRun({ text: "5月10日复评行为频率，目标降至每日2次以下。若无效，转诊动物行为专家。", font: "SimSun", size: 22 })] }),
+          ]
+        }]
+      });
+      const blob = await Packer.toBlob(doc);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '行为异常专项分析.docx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // 绑定下载事件
+    document.getElementById('download-pdf-1').addEventListener('click', (e) => {
+      e.stopPropagation();
+      downloadPDF('report-april-health', '2024年4月健康月报');
+    });
+    document.getElementById('download-docx').addEventListener('click', (e) => {
+      e.stopPropagation();
+      downloadDOCX();
+    });
+    document.getElementById('download-pdf-2').addEventListener('click', (e) => {
+      e.stopPropagation();
+      downloadPDF('report-q1-summary', '2024年第一季度总结');
+    });
+
+    // 退出登录跳转
+document.getElementById('logout-btn').addEventListener('click', function() {
+  window.location.href = 'login.html';
+});
+
+    // 初始化所有组件
+    renderPets();
+    renderMembers();
+    document.getElementById('edit-avatar-preview').src = profileAvatar.src;
+  })();
+</script>
+</body>
+</html>

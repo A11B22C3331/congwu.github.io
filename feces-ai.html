@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>粪便AI识别 - 智能健康评估</title>
+    <script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js">
+    </script>
+    <script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js">
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #FFF9F5;
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .card-shadow {
+            box-shadow: 0 8px 24px -4px rgba(255, 141, 108, 0.08), 0 4px 12px -2px rgba(255, 141, 108, 0.06);
+        }
+
+        .upload-zone {
+            transition: all 0.25s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-zone:hover {
+            border-color: #FF8D6C;
+            background-color: #FFF5F2;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px -4px rgba(255, 141, 108, 0.15);
+        }
+
+        .upload-zone.drag-over {
+            border-color: #FF8D6C;
+            background-color: #FFF0EC;
+            box-shadow: 0 0 0 4px rgba(255, 141, 108, 0.12);
+            transform: scale(1.01);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #FF8D6C 0%, #FF6B4A 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 6px 18px rgba(255, 107, 74, 0.25);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 10px 24px rgba(255, 107, 74, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.97);
+            box-shadow: 0 4px 12px rgba(255, 107, 74, 0.3);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .status-normal {
+            background-color: #E8F9F0;
+            color: #1A9C5E;
+        }
+        .status-loose {
+            background-color: #FFF4E6;
+            color: #D98C2E;
+        }
+        .status-warning {
+            background-color: #FFE8E5;
+            color: #D94A3A;
+        }
+
+        .history-item {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .history-item:hover {
+            background-color: #FFFBF9;
+            border-color: #FFD5C5;
+            box-shadow: 0 2px 8px rgba(255, 141, 108, 0.08);
+        }
+
+        .search-input:focus {
+            border-color: #FF8D6C;
+            box-shadow: 0 0 0 3px rgba(255, 141, 108, 0.1);
+            outline: none;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeInUp 0.45s ease forwards;
+        }
+        .animate-fade-in-delay-1 {
+            animation: fadeInUp 0.45s ease 0.1s forwards;
+            opacity: 0;
+        }
+        .animate-fade-in-delay-2 {
+            animation: fadeInUp 0.45s ease 0.2s forwards;
+            opacity: 0;
+        }
+        .animate-fade-in-delay-3 {
+            animation: fadeInUp 0.45s ease 0.3s forwards;
+            opacity: 0;
+        }
+
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.4;
+            }
+        }
+        .pulse-dot {
+            animation: pulse-dot 1.8s ease-in-out infinite;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #FFD5C5;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #FFB89A;
+        }
+
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(6px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .bristol-scale-item {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .bristol-scale-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        }
+        .bristol-scale-item.selected {
+            border-color: #FF8D6C !important;
+            background-color: #FFF5F2 !important;
+            box-shadow: 0 0 0 3px rgba(255, 141, 108, 0.2);
+        }
+
+        /* 右侧栏滚动 */
+        .right-sidebar {
+            max-height: calc(100vh - 140px);
+            overflow-y: auto;
+            position: sticky;
+            top: 100px;
+        }
+    </style>
+</head>
+<body class="flex flex-col pb-20 md:pb-0">
+
+    <!-- ========== 顶部导航栏 (全宽) ========== -->
+    <header class="sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-orange-50 px-4 md:px-8 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <button
+                class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-orange-100 hover:text-orange-500 transition-all"
+                onclick="goBack()"
+                title="返回健康管家"
+            >
+                <iconify-icon icon="ph:arrow-left-bold" width="22"></iconify-icon>
+            </button>
+            <div class="flex items-center gap-2">
+                <div class="w-9 h-9 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center text-white shadow-md shadow-orange-200">
+                    <iconify-icon icon="ph:toilet-paper-bold" width="20"></iconify-icon>
+                </div>
+                <div>
+                    <span class="text-lg font-bold text-gray-800">粪便AI识别</span>
+                    <p class="text-[10px] text-gray-400 -mt-0.5">智能健康评估</p>
+                </div>
+            </div>
+        </div>
+        <span class="text-xs text-gray-300 hidden md:block">2026年05月04日</span>
+    </div>
+</header>
+
+<!-- ========== 主内容区：左右两栏布局 ========== -->
+<main class="flex-grow max-w-7xl mx-auto w-full px-4 md:px-8 py-6">
+    <div class="flex flex-col lg:flex-row gap-6">
+        
+        <!-- 左侧栏：上传、工具、温馨提示 -->
+        <div class="flex-1 space-y-6 animate-fade-in">
+            
+            <!-- 上传区域 -->
+            <div class="upload-zone bg-white rounded-[28px] p-8 md:p-10 card-shadow border-2 border-dashed border-orange-200 text-center"
+                 id="upload-zone"
+                 onclick="document.getElementById('file-input').click()">
+                <div class="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-orange-500">
+                    <iconify-icon icon="ph:cloud-arrow-up-bold" width="36"></iconify-icon>
+                </div>
+                <h3 class="text-lg font-bold text-gray-700 mb-1">拖拽文件到此处上传</h3>
+                <p class="text-sm text-gray-400">支持 JPG、PNG、MP4、MOV 格式</p>
+                <p class="text-[11px] text-gray-300 mt-2">单文件最大 20MB</p>
+                <input
+                    type="file"
+                    id="file-input"
+                    accept="image/jpeg,image/png,video/mp4,video/quicktime"
+                    style="display:none"
+                    onchange="handleFileSelect(this.files)"
+                />
+            </div>
+
+            <!-- 从相册选择按钮 -->
+            <div class="flex justify-center">
+                <button
+                    class="btn-primary px-8 py-3 rounded-2xl font-bold text-sm flex items-center gap-2"
+                    onclick="document.getElementById('file-input').click()"
+                >
+                    <iconify-icon icon="ph:images-bold" width="20"></iconify-icon>
+                    从相册选择
+                </button>
+            </div>
+
+            <!-- 专业分析工具卡片 -->
+            <div class="bg-white rounded-[28px] p-5 md:p-7 card-shadow border border-gray-50 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center flex-shrink-0 text-purple-500">
+                        <iconify-icon icon="ph:flask-bold" width="26"></iconify-icon>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-800">专业分析工具</h4>
+                        <p class="text-xs text-gray-400 mt-0.5 leading-relaxed">
+                            想要更深入的肠道菌群分析？点击了解居家采样检测套餐。
+                        </p>
+                    </div>
+                </div>
+                <button
+                    class="btn-primary px-6 py-2.5 rounded-2xl font-bold text-sm flex items-center gap-2 flex-shrink-0"
+                    onclick="alert('即将跳转到肠道菌群检测套餐详情页面')"
+                >
+                    立即查看详情
+                    <iconify-icon icon="ph:arrow-right-bold" width="16"></iconify-icon>
+                </button>
+            </div>
+
+            <!-- 温馨提示 -->
+            <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-[24px] p-5 md:p-6 border border-orange-100 flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0 text-orange-500">
+                    <iconify-icon icon="ph:info-bold" width="22"></iconify-icon>
+                </div>
+                <div>
+                    <h4 class="text-sm font-bold text-orange-800 mb-1">温馨提示</h4>
+                    <p class="text-xs text-orange-700/80 leading-relaxed">
+                        AI识别结果仅供日常健康参考，<span class="font-bold">不能替代专业的兽医诊断</span>。若您的宠物出现拉稀、血便、精神萎靡、食欲不振等明显异常症状，请立即送往附近宠物医院就诊。
+                    </p>
+                </div>
+            </div>
+
+            <!-- 底部清理提示 -->
+            <div class="bg-gray-50/80 rounded-[20px] p-4 border border-gray-100 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-gray-200 flex items-center justify-center text-gray-500">
+                        <iconify-icon icon="ph:broom-bold" width="18"></iconify-icon>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-600">清理不常用的应用</p>
+                        <p class="text-[10px] text-gray-400">您有6款应用，清理整理</p>
+                    </div>
+                </div>
+                <button
+                    class="text-xs text-orange-500 font-medium hover:text-orange-700 transition-colors flex items-center gap-1 flex-shrink-0"
+                    onclick="alert('正在分析不常用应用...')"
+                >
+                    去清理 <iconify-icon icon="ph:arrow-right-bold" width="12"></iconify-icon>
+                </button>
+            </div>
+        </div>
+
+        <!-- 右侧栏：历史分析记录（固定宽度，独立滚动） -->
+        <div class="lg:w-96 flex-shrink-0 animate-fade-in-delay-1">
+            <div class="right-sidebar bg-white rounded-[28px] p-5 md:p-7 card-shadow border border-gray-50">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+                    <h3 class="text-lg font-bold flex items-center gap-2">
+                        <iconify-icon class="text-orange-500" icon="ph:clock-counter-clockwise-bold" width="22"></iconify-icon>
+                        历史分析记录
+                    </h3>
+                    <div class="relative w-full">
+                        <iconify-icon
+                            class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300"
+                            icon="ph:magnifying-glass-bold"
+                            width="18"
+                        ></iconify-icon>
+                        <input
+                            class="search-input w-full pl-10 pr-4 py-2.5 bg-gray-50 rounded-2xl text-sm border border-gray-100 transition-all"
+                            type="text"
+                            placeholder="搜索日期或关键词..."
+                            id="search-input"
+                            oninput="filterHistory()"
+                        />
+                    </div>
+                </div>
+
+                <!-- 记录列表 -->
+                <div class="space-y-3" id="history-list">
+                    <!-- 记录1 -->
+                    <div class="history-item bg-gray-50/60 rounded-2xl p-4 border border-gray-100 flex flex-col justify-between gap-3"
+                         data-date="2026-05-01" data-status="正常" data-keywords="4型 褐色 稳定">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
+                                <iconify-icon class="text-green-500" icon="ph:check-circle-bold" width="22"></iconify-icon>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-bold text-sm">2026年05月01日</span>
+                                    <span class="text-xs text-gray-400">下午14:30</span>
+                                    <span class="status-badge status-normal">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> 正常
+                                    </span>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                                    形态：<span class="font-medium text-gray-700">4型</span>；
+                                    颜色：<span class="font-medium text-gray-700">褐色</span>；
+                                    <span class="text-gray-400">状态稳定，维持现状即可。</span>
+                                </p>
+                            </div>
+                        </div>
+                        <button class="text-xs text-orange-500 hover:text-orange-700 font-medium flex items-center gap-1 self-end"
+                                onclick="viewDetail('2026-05-01', '正常', '4型', '褐色', '状态稳定，维持现状即可。')">
+                            查看详情 <iconify-icon icon="ph:arrow-right-bold" width="14"></iconify-icon>
+                        </button>
+                    </div>
+
+                    <!-- 记录2 -->
+                    <div class="history-item bg-gray-50/60 rounded-2xl p-4 border border-gray-100 flex flex-col justify-between gap-3"
+                         data-date="2026-04-25" data-status="偏稀" data-keywords="6型 淡褐色 零食">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
+                                <iconify-icon class="text-orange-500" icon="ph:warning-bold" width="22"></iconify-icon>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-bold text-sm">2026年04月25日</span>
+                                    <span class="text-xs text-gray-400">上午09:12</span>
+                                    <span class="status-badge status-loose">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span> 偏稀
+                                    </span>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                                    形态：<span class="font-medium text-gray-700">6型</span>；
+                                    颜色：<span class="font-medium text-gray-700">淡褐色</span>；
+                                    <span class="text-gray-400">可能与昨日更换零食品牌有关，建议禁食观察12小时。</span>
+                                </p>
+                            </div>
+                        </div>
+                        <button class="text-xs text-orange-500 hover:text-orange-700 font-medium flex items-center gap-1 self-end"
+                                onclick="viewDetail('2026-04-25', '偏稀', '6型', '淡褐色', '可能与昨日更换零食品牌有关，建议禁食观察12小时。')">
+                            查看详情 <iconify-icon icon="ph:arrow-right-bold" width="14"></iconify-icon>
+                        </button>
+                    </div>
+
+                    <!-- 记录3 -->
+                    <div class="history-item bg-gray-50/60 rounded-2xl p-4 border border-gray-100 flex flex-col justify-between gap-3"
+                         data-date="2026-04-18" data-status="正常" data-keywords="3型 深褐色 饮水">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
+                                <iconify-icon class="text-green-500" icon="ph:check-circle-bold" width="22"></iconify-icon>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-bold text-sm">2026年04月18日</span>
+                                    <span class="text-xs text-gray-400">晚上21:05</span>
+                                    <span class="status-badge status-normal">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> 正常
+                                    </span>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                                    形态：<span class="font-medium text-gray-700">3型</span>；
+                                    颜色：<span class="font-medium text-gray-700">深褐色</span>；
+                                    <span class="text-gray-400">饮水量略不足，注意补充水分。</span>
+                                </p>
+                            </div>
+                        </div>
+                        <button class="text-xs text-orange-500 hover:text-orange-700 font-medium flex items-center gap-1 self-end"
+                                onclick="viewDetail('2026-04-18', '正常', '3型', '深褐色', '饮水量略不足，注意补充水分。')">
+                            查看详情 <iconify-icon icon="ph:arrow-right-bold" width="14"></iconify-icon>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 无搜索结果 -->
+                <div id="no-result" class="hidden text-center py-12">
+                    <div class="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-400">
+                        <iconify-icon icon="ph:file-search-bold" width="28"></iconify-icon>
+                    </div>
+                    <p class="text-sm text-gray-400">未找到匹配的记录</p>
+                    <p class="text-xs text-gray-300 mt-1">请尝试其他关键词</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- ========== 底部 (全宽) ========== -->
+<footer class="bg-white border-t border-orange-50 py-6 px-4 mt-8 mb-20 md:mb-0">
+    <div class="max-w-7xl mx-auto text-center">
+        <p class="text-[11px] text-gray-400">© 2026 PetMind 智能宠物健康管理平台 · AI识别结果仅供参考</p>
+    </div>
+</footer>
+
+<!-- ========== 移动端底部导航 ========== -->
+<div class="md:hidden fixed bottom-0 left-0 right-0 h-[84px] bg-white/85 backdrop-blur-xl border-t border-orange-50 px-2 flex justify-between items-center pb-6 z-50">
+    <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="index.html">
+        <iconify-icon icon="ph:house-bold" width="22"></iconify-icon>
+        <span class="text-[9px] font-bold">首页</span>
+    </a>
+    <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="behavior.html">
+        <iconify-icon icon="ph:dog-bold" width="22"></iconify-icon>
+        <span class="text-[9px] font-bold">行为感知</span>
+    </a>
+    <a class="flex flex-col items-center gap-1 text-orange-500 flex-1" href="health.html">
+        <iconify-icon icon="ph:heartbeat-fill" width="22"></iconify-icon>
+        <span class="text-[9px] font-bold">健康管家</span>
+    </a>
+    <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="social.html">
+        <iconify-icon icon="ph:users-three-bold" width="22"></iconify-icon>
+        <span class="text-[9px] font-bold">宠友圈</span>
+    </a>
+    <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="personal.html">
+        <iconify-icon icon="ph:user-circle-bold" width="22"></iconify-icon>
+        <span class="text-[9px] font-bold">我的</span>
+    </a>
+</div>
+
+<!-- ========== 详情模态框 ========== -->
+<div class="fixed inset-0 z-[100] modal-overlay flex items-center justify-center p-4" id="detail-modal-overlay" onclick="closeDetailModal()">
+    <div class="bg-white rounded-[28px] p-6 md:p-8 w-full max-w-md shadow-2xl" onclick="event.stopPropagation()">
+        <div class="flex justify-between items-center mb-5">
+            <h3 class="text-lg font-bold">分析详情</h3>
+            <button
+                class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
+                onclick="closeDetailModal()"
+            >
+                <iconify-icon icon="ph:x-bold" width="18"></iconify-icon>
+            </button>
+        </div>
+        <div class="space-y-4" id="detail-content">
+            <!-- 动态填充 -->
+        </div>
+        <button
+            class="mt-6 w-full py-3 bg-gray-100 text-gray-600 rounded-2xl font-bold text-sm hover:bg-gray-200 transition-colors"
+            onclick="closeDetailModal()"
+        >
+            关闭
+        </button>
+    </div>
+</div>
+
+<script>
+    // ========== 返回上一页 ==========
+    function goBack() {
+        window.location.href = 'health.html';
+    }
+
+    // ========== 文件上传处理 ==========
+    const uploadZone = document.getElementById('upload-zone');
+
+    uploadZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.classList.add('drag-over');
+    });
+
+    uploadZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.classList.remove('drag-over');
+    });
+
+    uploadZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+            handleFileSelect(files);
+        }
+    });
+
+    function handleFileSelect(files) {
+        if (!files || files.length === 0) return;
+        const file = files[0];
+
+        const allowedTypes = ['image/jpeg', 'image/png', 'video/mp4', 'video/quicktime'];
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.mp4', '.mov'];
+        const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+        if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+            alert('不支持的文件格式！请上传 JPG、PNG、MP4 或 MOV 格式的文件。');
+            return;
+        }
+
+        if (file.size > 20 * 1024 * 1024) {
+            alert('文件大小超过限制！单文件最大 20MB。');
+            return;
+        }
+
+        simulateAnalysis(file);
+    }
+
+    function simulateAnalysis(file) {
+        const uploadZoneEl = document.getElementById('upload-zone');
+        const originalHTML = uploadZoneEl.innerHTML;
+        uploadZoneEl.innerHTML = `
+            <div class="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-orange-500">
+                <iconify-icon icon="eos-icons:loading" class="animate-spin" width="36"></iconify-icon>
+            </div>
+            <h3 class="text-lg font-bold text-gray-700 mb-1">正在分析中...</h3>
+            <p class="text-sm text-gray-400">AI正在识别粪便形态与颜色</p>
+            <div class="mt-4 w-48 h-2 bg-gray-200 rounded-full mx-auto overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full animate-pulse" style="width:75%"></div>
+            </div>
+        `;
+
+        setTimeout(() => {
+            const results = [
+                { type: '4型', color: '褐色', status: '正常', advice: '状态稳定，维持现状即可。', statusClass: 'status-normal',
+                    icon: 'ph:check-circle-bold', iconBg: 'bg-green-100', iconColor: 'text-green-500' },
+                { type: '5型', color: '黄褐色', status: '略软', advice: '可能轻微消化不适，建议观察24小时。', statusClass: 'status-loose',
+                    icon: 'ph:warning-bold', iconBg: 'bg-orange-100', iconColor: 'text-orange-500' },
+                { type: '3型', color: '深褐色', status: '正常', advice: '形态良好，饮水需保持充足。', statusClass: 'status-normal',
+                    icon: 'ph:check-circle-bold', iconBg: 'bg-green-100', iconColor: 'text-green-500' },
+            ];
+            const result = results[Math.floor(Math.random() * results.length)];
+
+            uploadZoneEl.innerHTML = originalHTML;
+
+            const resultHTML = `
+                <div class="bg-white rounded-[24px] p-6 card-shadow border border-green-100 mt-4 animate-fade-in">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-xl ${result.iconBg} flex items-center justify-center">
+                            <iconify-icon class="${result.iconColor}" icon="${result.icon}" width="26"></iconify-icon>
+                        </div>
+                        <div>
+                            <span class="font-bold text-lg">分析完成</span>
+                            <span class="status-badge ${result.statusClass} ml-2">${result.status}</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div class="bg-gray-50 rounded-xl p-3">
+                            <span class="text-gray-400 text-xs">粪便形态</span>
+                            <p class="font-bold text-gray-700">${result.type}</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-3">
+                            <span class="text-gray-400 text-xs">颜色</span>
+                            <p class="font-bold text-gray-700">${result.color}</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-3 leading-relaxed">💡 ${result.advice}</p>
+                    <p class="text-[10px] text-gray-300 mt-2">分析时间：${new Date().toLocaleString('zh-CN')} | 文件：${file.name}</p>
+                </div>
+            `;
+
+            // 将结果插入到左侧栏的上传区域下方
+            const uploadSection = document.getElementById('upload-zone').parentElement.parentElement; // 找到 main 的直接子容器
+            const existingResult = document.getElementById('live-result');
+            if (existingResult) existingResult.remove();
+            const resultDiv = document.createElement('div');
+            resultDiv.id = 'live-result';
+            resultDiv.innerHTML = resultHTML;
+            // 插入到左侧栏的“从相册选择”按钮之后
+            const chooseBtn = uploadSection.querySelector('.flex.justify-center');
+            if (chooseBtn) {
+                chooseBtn.parentNode.insertBefore(resultDiv, chooseBtn.nextSibling);
+            } else {
+                uploadSection.insertBefore(resultDiv, uploadSection.children[2]);
+            }
+
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            setTimeout(() => {
+                const el = document.getElementById('live-result');
+                if (el) {
+                    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    el.style.opacity = '0';
+                    el.style.transform = 'translateY(-10px)';
+                    setTimeout(() => el.remove(), 500);
+                }
+            }, 8000);
+        }, 2000);
+    }
+
+    // ========== 历史记录搜索 ==========
+    function filterHistory() {
+        const query = document.getElementById('search-input').value.toLowerCase().trim();
+        const items = document.querySelectorAll('#history-list .history-item');
+        let visibleCount = 0;
+
+        items.forEach(item => {
+            const date = item.getAttribute('data-date') || '';
+            const status = item.getAttribute('data-status') || '';
+            const keywords = item.getAttribute('data-keywords') || '';
+            const allText = `${date} ${status} ${keywords}`.toLowerCase();
+
+            if (!query || allText.includes(query)) {
+                item.style.display = '';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        document.getElementById('no-result').classList.toggle('hidden', visibleCount > 0);
+    }
+
+    // ========== 查看详情 ==========
+    function viewDetail(date, status, type, color, advice) {
+        const statusClass = status === '正常' ? 'status-normal' : 'status-loose';
+        const iconBg = status === '正常' ? 'bg-green-100' : 'bg-orange-100';
+        const iconColor = status === '正常' ? 'text-green-500' : 'text-orange-500';
+        const iconName = status === '正常' ? 'ph:check-circle-bold' : 'ph:warning-bold';
+
+        document.getElementById('detail-content').innerHTML = `
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 rounded-xl ${iconBg} flex items-center justify-center">
+                    <iconify-icon class="${iconColor}" icon="${iconName}" width="26"></iconify-icon>
+                </div>
+                <div>
+                    <span class="font-bold text-lg">${date}</span>
+                    <span class="status-badge ${statusClass} ml-2">${status}</span>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+                <div class="bg-gray-50 rounded-xl p-3">
+                    <span class="text-gray-400 text-xs">粪便形态</span>
+                    <p class="font-bold text-gray-700">${type}</p>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-3">
+                    <span class="text-gray-400 text-xs">颜色</span>
+                    <p class="font-bold text-gray-700">${color}</p>
+                </div>
+            </div>
+            <div class="bg-orange-50/60 rounded-xl p-4 mt-3">
+                <p class="text-xs text-gray-600 leading-relaxed">💡 ${advice}</p>
+            </div>
+            <p class="text-[10px] text-gray-300 mt-2">记录时间：${date}</p>
+        `;
+
+        document.getElementById('detail-modal-overlay').classList.add('active');
+    }
+
+    function closeDetailModal() {
+        document.getElementById('detail-modal-overlay').classList.remove('active');
+    }
+
+    // ========== 键盘ESC关闭模态框 ==========
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeDetailModal();
+        }
+    });
+</script>
+</body>
+</html>

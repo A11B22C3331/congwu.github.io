@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>行为感知 - 多模态行为解译与记录（基于用户上传的图片/视频）</title>
+    <script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js">
+    </script>
+    <script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js">
+    </script>
+    <script src="https://modao.cc/agent-py/static/source/js/echarts.min.js">
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #FFF9F5;
+            color: #333;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .card-shadow {
+            box-shadow: 0 10px 25px -5px rgba(255, 141, 108, 0.1), 0 8px 10px -6px rgba(255, 141, 108, 0.08);
+        }
+
+        .nav-link:hover {
+            color: #FF8D6C;
+        }
+
+        .nav-active {
+            color: #FF8D6C;
+            font-weight: 700;
+            border-bottom: 2px solid #FF8D6C;
+        }
+
+        .drop-zone--over {
+            border-color: #FF8D6C !important;
+            background-color: #FFF5F0 !important;
+            transform: scale(1.01);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #e5e7eb;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #d1d5db;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.8);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.8);
+                opacity: 0;
+            }
+        }
+
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        @keyframes marker-glow {
+            0%,
+            100% {
+                box-shadow: 0 0 4px 2px rgba(255, 141, 108, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 12px 6px rgba(255, 141, 108, 0.8);
+            }
+        }
+
+        .marker-active {
+            animation: marker-glow 1.2s ease-in-out infinite;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #FF8D6C;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            transition: transform 0.15s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .video-overlay-gradient {
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, transparent 40%, transparent 60%, rgba(0, 0, 0, 0.3) 100%);
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .slide-in-up {
+            animation: slideInUp 0.4s ease-out;
+        }
+
+        @keyframes toastIn {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes toastOut {
+            from {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+        }
+
+        .toast-enter {
+            animation: toastIn 0.35s ease-out;
+        }
+
+        .toast-exit {
+            animation: toastOut 0.3s ease-in forwards;
+        }
+
+        .analysis-grid-overlay {
+            background-image:
+                linear-gradient(rgba(255, 141, 108, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 141, 108, 0.08) 1px, transparent 1px);
+            background-size: 24px 24px;
+            pointer-events: none;
+        }
+
+        @keyframes keypointPulse {
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+            50% {
+                transform: scale(1.5);
+                opacity: 1;
+            }
+        }
+
+        .keypoint {
+            animation: keypointPulse 2s ease-in-out infinite;
+        }
+
+        .keypoint:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .keypoint:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
+        .keypoint:nth-child(4) {
+            animation-delay: 0.9s;
+        }
+
+        .keypoint:nth-child(5) {
+            animation-delay: 1.2s;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <div class="fixed top-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none" id="toast-container"></div>
+
+    <div class="fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 md:hidden" id="mobile-overlay" onclick="toggleMobileMenu()"></div>
+    <div class="fixed top-0 right-0 h-full w-72 bg-white z-[95] shadow-2xl transform translate-x-full transition-transform duration-350 ease-out md:hidden rounded-l-[32px]" id="mobile-menu">
+        <div class="p-6 pt-12">
+            <div class="flex justify-between items-center mb-8">
+                <span class="text-lg font-bold text-gray-800">导航菜单</span>
+                <button class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors" onclick="toggleMobileMenu()">
+                    <iconify-icon icon="ph:x-bold" width="20"></iconify-icon>
+                </button>
+            </div>
+            <nav class="flex flex-col gap-3">
+                <a class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-orange-50 hover:text-orange-500 transition-colors font-medium" href="index.html">
+                    <iconify-icon icon="ph:house-bold" width="22"></iconify-icon> 首页
+                </a>
+                <a class="flex items-center gap-3 px-4 py-3 rounded-xl bg-orange-50 text-orange-500 font-bold" href="behavior.html">
+                    <iconify-icon icon="ph:dog-fill" width="22"></iconify-icon> 行为感知
+                </a>
+                <a class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-orange-50 hover:text-orange-500 transition-colors font-medium" href="health.html">
+                    <iconify-icon icon="ph:heartbeat-bold" width="22"></iconify-icon> 健康管家
+                </a>
+                <a class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-orange-50 hover:text-orange-500 transition-colors font-medium" href="social.html">
+                    <iconify-icon icon="ph:users-three-bold" width="22"></iconify-icon> 宠友圈
+                </a>
+                <a class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-orange-50 hover:text-orange-500 transition-colors font-medium" href="personal.html">
+                    <iconify-icon icon="ph:user-circle-bold" width="22"></iconify-icon> 我的
+                </a>
+            </nav>
+            <div class="mt-8 p-4 bg-orange-50 rounded-2xl">
+                <p class="text-xs text-gray-500">当前日期</p>
+                <p class="text-sm font-bold text-gray-700">2026年05月04日</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="fixed inset-0 z-[80] bg-black/95 backdrop-blur-md flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-400" id="video-modal">
+        <div class="relative w-full max-w-5xl mx-4">
+            <button class="absolute -top-14 right-0 w-10 h-10 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition-colors z-10" onclick="closeVideoModal()">
+                <iconify-icon icon="ph:x-bold" width="22"></iconify-icon>
+            </button>
+            <div class="relative aspect-video rounded-2xl overflow-hidden bg-black" id="modal-video-container">
+                <video class="w-full h-full object-contain" id="modal-video" src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" playsinline controlsList="nodownload"></video>
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none" id="modal-video-overlay">
+                    <button class="w-20 h-20 bg-white/25 backdrop-blur-md rounded-full flex items-center justify-center text-white text-4xl pointer-events-auto transition-transform hover:scale-110 shadow-2xl" id="modal-play-btn" onclick="toggleModalVideo()">
+                        <iconify-icon icon="ph:play-fill" id="modal-play-icon"></iconify-icon>
+                    </button>
+                </div>
+            </div>
+            <div class="mt-4 px-2">
+                <div class="flex items-center justify-between text-white/70 text-sm">
+                    <span id="modal-time-current">00:00</span>
+                    <div class="flex items-center gap-3">
+                        <button class="hover:text-white transition-colors" onclick="skipModalVideo(-10)" title="后退10秒">
+                            <iconify-icon icon="ph:arrow-counter-clockwise-bold" width="18"></iconify-icon>
+                        </button>
+                        <div class="flex-1 w-48 md:w-80 h-1.5 bg-white/20 rounded-full cursor-pointer relative group" id="modal-progress-bar" onclick="seekModalVideo(event)">
+                            <div class="h-full bg-orange-500 rounded-full transition-all duration-150" id="modal-progress-fill" style="width:0%"></div>
+                            <div class="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity" id="modal-progress-thumb" style="left:0%"></div>
+                        </div>
+                        <button class="hover:text-white transition-colors" onclick="skipModalVideo(10)" title="前进10秒">
+                            <iconify-icon icon="ph:arrow-clockwise-bold" width="18"></iconify-icon>
+                        </button>
+                    </div>
+                    <span id="modal-time-duration">00:00</span>
+                    <button class="hover:text-white transition-colors ml-2" onclick="toggleModalFullscreen()" title="全屏">
+                        <iconify-icon icon="ph:arrows-out-bold" width="18"></iconify-icon>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-orange-50 px-4 md:px-8 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-200">
+                    <iconify-icon icon="ph:paw-print-fill" width="24"></iconify-icon>
+                </div>
+                <span class="text-xl font-bold bg-gradient-to-r from-orange-600 to-orange-400 bg-clip-text text-transparent hidden sm:block">PetMind</span>
+            </div>
+            <nav class="hidden md:flex items-center gap-8">
+                <a class="nav-link py-1 cursor-pointer" href="index.html">首页</a>
+                <a class="nav-link nav-active py-1 cursor-pointer" href="behavior.html">行为感知</a>
+                <a class="nav-link py-1 cursor-pointer" href="health.html">健康管家</a>
+                <a class="nav-link py-1 cursor-pointer" href="social.html">宠友圈</a>
+                <a class="nav-link py-1 cursor-pointer" href="personal.html">我的</a>
+            </nav>
+            <div class="flex items-center gap-4">
+                <span class="text-xs text-gray-400 hidden lg:block">2026年05月04日</span>
+                <button class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 md:hidden hover:bg-orange-100 hover:text-orange-500 transition-colors" onclick="toggleMobileMenu()">
+                    <iconify-icon icon="ph:list-bold" width="24"></iconify-icon>
+                </button>
+                <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 overflow-hidden border-2 border-orange-200 cursor-pointer hover:scale-105 transition-transform" onclick="showToast('用户中心', '正在跳转到个人页面...')">
+                    <img alt="User Avatar" class="w-full h-full object-cover" src="https://modao.cc/agent-py/media/generated_images/2026-05-03/7317a86f439f41ea80cacd25057b2cf4.jpg#desc=User%20Avatar"/>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 md:px-8 py-8">
+        <div class="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">行为感知</h1>
+                <p class="text-gray-400 mt-2">多模态行为解译与记录（基于用户上传的图片/视频）</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="px-4 py-2 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors flex items-center gap-1.5" onclick="showToast('导出报告', '正在生成PDF行为分析报告...')">
+                    <iconify-icon icon="ph:file-pdf-bold" width="16"></iconify-icon> 导出报告
+                </button>
+                <button class="px-4 py-2 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors flex items-center gap-1.5" onclick="refreshAnalysis()">
+                    <iconify-icon icon="ph:arrows-clockwise-bold" width="16"></iconify-icon> 刷新数据
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="lg:col-span-7 space-y-8">
+                <div class="bg-white rounded-[32px] p-6 md:p-8 card-shadow border border-orange-50">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                            <iconify-icon class="text-orange-500" icon="ph:upload-simple-bold"></iconify-icon>
+                            上传行为分析
+                        </h3>
+                        <span class="text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-full">支持 MP4, MOV, JPG, PNG</span>
+                    </div>
+                    <div class="relative w-full border-2 border-dashed border-orange-200 rounded-[24px] bg-orange-50/30 p-10 transition-all duration-300 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-orange-50/50" id="drop-zone">
+                        <input accept="video/*,image/*" class="hidden" id="file-input" multiple type="file"/>
+                        <div class="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center text-orange-500 mb-4 transition-transform duration-300" id="upload-icon">
+                            <iconify-icon icon="ph:video-camera-bold" width="40"></iconify-icon>
+                        </div>
+                        <h4 class="text-lg font-bold text-gray-700 mb-2" id="upload-title">点击或拖拽文件到这里</h4>
+                        <p class="text-sm text-gray-400 mb-6" id="upload-subtitle">我们将通过AI模型为您深度解析宠物的行为与情绪</p>
+                        <div class="flex gap-4 flex-wrap justify-center">
+                            <button class="px-6 py-2.5 bg-orange-500 text-white rounded-full font-bold text-sm shadow-lg shadow-orange-200 hover:bg-orange-600 transition-all hover:scale-105 active:scale-95 flex items-center gap-2" onclick="document.getElementById('file-input').click()">
+                                <iconify-icon icon="ph:camera-bold"></iconify-icon>
+                                拍摄/拍照
+                            </button>
+                            <button class="px-6 py-2.5 bg-white border border-orange-200 text-orange-500 rounded-full font-bold text-sm hover:bg-orange-50 transition-all hover:scale-105 active:scale-95 flex items-center gap-2" onclick="document.getElementById('file-input').click()">
+                                <iconify-icon icon="ph:image-bold"></iconify-icon>
+                                从相册选择
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-4 space-y-2 hidden" id="file-preview-list"></div>
+                    <div class="mt-6 space-y-4 hidden" id="upload-progress">
+                        <div class="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="flex items-center gap-3">
+                                    <iconify-icon class="text-orange-400" icon="ph:file-video-bold" width="24"></iconify-icon>
+                                    <span class="text-sm font-medium text-gray-700" id="upload-filename">正在上传...</span>
+                                </div>
+                                <span class="text-xs font-bold text-orange-500" id="upload-percent">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div class="bg-orange-500 h-1.5 rounded-full transition-all duration-200" id="progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 hidden" id="analyzing-indicator">
+                        <div class="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-5 border border-orange-100 flex items-center gap-4">
+                            <div class="relative w-12 h-12 flex items-center justify-center">
+                                <div class="absolute w-full h-full rounded-full bg-orange-400/30 pulse-ring"></div>
+                                <iconify-icon icon="ph:brain-bold" class="text-orange-500 relative z-10" width="24"></iconify-icon>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-gray-700">AI模型正在解析中...</p>
+                                <p class="text-xs text-gray-400" id="analyzing-detail">识别行为特征 · 分析情绪状态</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-[32px] p-6 md:p-8 card-shadow border border-orange-50">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <h3 class="font-bold text-gray-800">解译记录历史</h3>
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <div class="relative flex-grow sm:flex-grow-0">
+                                <iconify-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" icon="ph:magnifying-glass"></iconify-icon>
+                                <input class="pl-9 pr-4 py-2.5 bg-gray-50 border-none rounded-xl text-xs w-full sm:w-52 focus:ring-2 focus:ring-orange-200 transition-all outline-none" id="search-input" placeholder="搜索行为或日期..." type="text" oninput="filterRecords()"/>
+                            </div>
+                            <button class="w-9 h-9 flex items-center justify-center bg-gray-50 rounded-xl text-gray-500 hover:bg-orange-100 hover:text-orange-500 transition-colors flex-shrink-0" onclick="showToast('添加笔记', '打开行为笔记编辑器')" title="添加笔记">
+                                <iconify-icon icon="ph:note-pencil-bold"></iconify-icon>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mb-4 flex-wrap" id="filter-tags">
+                        <button class="px-3 py-1.5 rounded-full text-[11px] font-bold bg-orange-500 text-white transition-all hover:scale-105 active:scale-95 cursor-pointer" data-filter="all" onclick="filterByTag('all', this)">全部</button>
+                        <button class="px-3 py-1.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-500 transition-all hover:scale-105 active:scale-95 hover:bg-gray-200 cursor-pointer" data-filter="玩耍" onclick="filterByTag('玩耍', this)">🪀 玩耍</button>
+                        <button class="px-3 py-1.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-500 transition-all hover:scale-105 active:scale-95 hover:bg-gray-200 cursor-pointer" data-filter="焦虑" onclick="filterByTag('焦虑', this)">😰 焦虑</button>
+                        <button class="px-3 py-1.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-500 transition-all hover:scale-105 active:scale-95 hover:bg-gray-200 cursor-pointer" data-filter="休息" onclick="filterByTag('休息', this)">😴 休息</button>
+                        <button class="px-3 py-1.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-500 transition-all hover:scale-105 active:scale-95 hover:bg-gray-200 cursor-pointer" data-filter="进食" onclick="filterByTag('进食', this)">🍖 进食</button>
+                    </div>
+                    <div class="space-y-3 max-h-[520px] overflow-y-auto custom-scrollbar pr-1" id="records-container">
+                    </div>
+                    <div class="text-center py-8 hidden" id="no-records">
+                        <iconify-icon icon="ph:smiley-sad-bold" class="text-gray-300 text-4xl mb-2"></iconify-icon>
+                        <p class="text-sm text-gray-400">没有找到匹配的记录</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5 space-y-8" id="right-panel">
+                <div class="bg-white rounded-[32px] p-6 md:p-8 card-shadow border border-orange-50 slide-in-up">
+                    <h3 class="font-bold text-gray-800 mb-6 flex items-center justify-between">
+                        解译详情回放
+                        <span class="text-[10px] font-normal text-gray-400 px-2 py-1 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors" id="detail-id">ID: #BHE-20260503</span>
+                    </h3>
+                    <div class="relative aspect-video rounded-2xl overflow-hidden bg-black mb-4 group cursor-pointer" id="detail-video-container" onclick="openVideoModal()">
+                        <video class="w-full h-full object-cover" id="detail-video" src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" playsinline preload="metadata" muted></video>
+                        <div class="absolute inset-0 video-overlay-gradient pointer-events-none"></div>
+                        <div class="absolute inset-0 analysis-grid-overlay pointer-events-none" id="analysis-overlay"></div>
+                        <div class="absolute inset-0 pointer-events-none hidden" id="skeleton-overlay">
+                            <div class="absolute keypoint w-2.5 h-2.5 bg-orange-400 rounded-full shadow-lg shadow-orange-400/60" style="top:30%;left:35%"></div>
+                            <div class="absolute keypoint w-2.5 h-2.5 bg-orange-400 rounded-full shadow-lg shadow-orange-400/60" style="top:28%;left:42%"></div>
+                            <div class="absolute keypoint w-2.5 h-2.5 bg-blue-400 rounded-full shadow-lg shadow-blue-400/60" style="top:45%;left:30%"></div>
+                            <div class="absolute keypoint w-2.5 h-2.5 bg-blue-400 rounded-full shadow-lg shadow-blue-400/60" style="top:43%;left:48%"></div>
+                            <div class="absolute keypoint w-2.5 h-2.5 bg-green-400 rounded-full shadow-lg shadow-green-400/60" style="top:55%;left:38%"></div>
+                        </div>
+                        <div class="absolute inset-0 pointer-events-none opacity-40" id="heatmap-overlay">
+                            <div class="absolute top-1/4 left-1/3 w-28 h-28 bg-orange-500 rounded-full blur-3xl"></div>
+                            <div class="absolute top-1/3 left-1/2 w-20 h-20 bg-amber-400 rounded-full blur-2xl"></div>
+                        </div>
+                        <div class="absolute inset-0 flex items-center justify-center" id="detail-play-overlay">
+                            <button class="w-16 h-16 bg-white/25 backdrop-blur-md rounded-full flex items-center justify-center text-white text-3xl transition-transform hover:scale-110 shadow-2xl pointer-events-none group-hover:scale-105" id="detail-play-btn">
+                                <iconify-icon icon="ph:play-fill" id="detail-play-icon"></iconify-icon>
+                            </button>
+                        </div>
+                        <div class="absolute bottom-0 left-0 right-0 px-3 pb-3 pt-8 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto" id="detail-controls">
+                            <div class="flex items-center gap-2 mb-1.5">
+                                <div class="flex gap-1.5 flex-shrink-0" id="behavior-markers">
+                                    <span class="w-2 h-2 rounded-full bg-green-400 cursor-pointer hover:scale-150 transition-transform" data-time="3" data-label="奔跑" title="奔跑 (00:03)"></span>
+                                    <span class="w-2 h-2 rounded-full bg-orange-400 cursor-pointer hover:scale-150 transition-transform" data-time="12" data-label="玩耍" title="玩耍 (00:12)"></span>
+                                    <span class="w-2 h-2 rounded-full bg-blue-400 cursor-pointer hover:scale-150 transition-transform" data-time="25" data-label="休息" title="休息 (00:25)"></span>
+                                    <span class="w-2 h-2 rounded-full bg-yellow-400 cursor-pointer hover:scale-150 transition-transform" data-time="38" data-label="吠叫" title="吠叫 (00:38)"></span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button class="text-white/80 hover:text-white transition-colors flex-shrink-0" onclick="event.stopPropagation();toggleDetailPlayPause()" title="播放/暂停">
+                                    <iconify-icon icon="ph:play-fill" id="detail-mini-play-icon" width="16"></iconify-icon>
+                                </button>
+                                <span class="text-[10px] text-white/70 flex-shrink-0 font-mono" id="detail-current-time">00:00</span>
+                                <div class="flex-grow h-1 bg-white/20 rounded-full cursor-pointer relative group/progress" onclick="event.stopPropagation();seekDetailVideo(event)" id="detail-progress-track">
+                                    <div class="h-full bg-orange-500 rounded-full transition-all duration-200" id="detail-progress-fill" style="width:0%"></div>
+                                    <div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg opacity-0 group-hover/progress:opacity-100 transition-opacity" id="detail-progress-thumb" style="left:0%"></div>
+                                </div>
+                                <span class="text-[10px] text-white/70 flex-shrink-0 font-mono" id="detail-duration">00:00</span>
+                                <button class="text-white/60 hover:text-white transition-colors flex-shrink-0" onclick="event.stopPropagation();toggleSkeletonOverlay()" title="AI骨架分析">
+                                    <iconify-icon icon="ph:graph-bold" width="14"></iconify-icon>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 mb-5 flex-wrap">
+                        <button class="text-[10px] px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 hover:bg-orange-100 hover:text-orange-500 transition-colors cursor-pointer" onclick="openVideoModal()">
+                            <iconify-icon icon="ph:arrows-out-bold" class="inline mr-1" width="12"></iconify-icon>放大查看
+                        </button>
+                        <button class="text-[10px] px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 hover:bg-orange-100 hover:text-orange-500 transition-colors cursor-pointer" id="skeleton-toggle-btn" onclick="toggleSkeletonOverlay()">
+                            <iconify-icon icon="ph:graph-bold" class="inline mr-1" width="12"></iconify-icon>骨架分析
+                        </button>
+                        <button class="text-[10px] px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 hover:bg-orange-100 hover:text-orange-500 transition-colors cursor-pointer" id="heatmap-toggle-btn" onclick="toggleHeatmapOverlay()">
+                            <iconify-icon icon="ph:fire-bold" class="inline mr-1" width="12"></iconify-icon>热力图
+                        </button>
+                        <span class="text-[10px] text-gray-300 ml-auto">点击视频可全屏查看</span>
+                    </div>
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                                <iconify-icon class="text-orange-400" icon="ph:chart-bar-horizontal-bold"></iconify-icon>
+                                多通道分析数据
+                            </h4>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="bg-gray-50 p-3 rounded-xl hover:bg-orange-50 transition-colors cursor-pointer" id="visual-channel">
+                                    <p class="text-[10px] text-gray-400 mb-1">视觉分析 (行为特征)</p>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-bold text-gray-800" id="visual-label">奔跑跳跃</span>
+                                        <span class="text-[10px] text-green-500 bg-green-50 px-1.5 py-0.5 rounded-full" id="visual-intensity">高强度</span>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 p-3 rounded-xl hover:bg-orange-50 transition-colors cursor-pointer" id="audio-channel">
+                                    <p class="text-[10px] text-gray-400 mb-1">听觉分析 (声学特征)</p>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-bold text-gray-800" id="audio-label">欢快吠叫</span>
+                                        <span class="text-[10px] text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-full" id="audio-db">55dB</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-orange-500 rounded-2xl p-5 text-white" id="ai-conclusion-box">
+                            <div class="flex items-center gap-3 mb-3">
+                                <span class="text-3xl" id="conclusion-emoji">😊</span>
+                                <div>
+                                    <h4 class="text-sm font-bold" id="conclusion-title">综合结论：情绪激昂</h4>
+                                    <p class="text-[10px] opacity-80" id="conclusion-subtitle">综合分析肢体语言与声学特征</p>
+                                </div>
+                            </div>
+                            <p class="text-xs leading-relaxed opacity-90 mb-4" id="conclusion-desc">
+                                您上传的视频显示，宠物表现出极高的社交意愿和运动活力。建议趁此时机进行一些户外互动。
+                            </p>
+                            <div class="pt-4 border-t border-white/20">
+                                <h5 class="text-xs font-bold mb-2">行动建议：</h5>
+                                <ul class="text-[10px] space-y-1.5 opacity-90" id="suggestions-list">
+                                    <li class="flex items-center gap-2"><iconify-icon icon="ph:check-circle-bold"></iconify-icon> 进行20分钟接球游戏</li>
+                                    <li class="flex items-center gap-2"><iconify-icon icon="ph:check-circle-bold"></iconify-icon> 奖励一次磨牙零食</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-[32px] p-6 md:p-8 card-shadow border border-orange-50">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="font-bold text-gray-800">行为统计图鉴</h3>
+                        <select class="text-[10px] bg-gray-50 border-none rounded-lg px-2 py-1.5 text-gray-500 cursor-pointer focus:ring-2 focus:ring-orange-200" onchange="updateChartPeriod(this.value)">
+                            <option value="week">本周</option>
+                            <option value="month">本月</option>
+                            <option value="quarter">本季度</option>
+                        </select>
+                    </div>
+                    <div class="w-full h-48 mb-6 cursor-pointer" id="behavior-chart" onclick="showToast('图表交互', '点击图表扇区可查看该行为的详细记录')"></div>
+                    <div class="space-y-4">
+                        <h4 class="text-sm font-bold text-gray-700">异常行为对比 (本月)</h4>
+                        <div class="flex items-center gap-4">
+                            <div class="flex-grow">
+                                <div class="flex justify-between text-[10px] mb-1">
+                                    <span class="text-gray-500">过度理毛</span>
+                                    <span class="font-bold text-gray-700">12%</span>
+                                </div>
+                                <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden cursor-pointer" onclick="showToast('过度理毛', '点击查看详细分析：本周过度理毛行为占比12%，较上周下降3%')">
+                                    <div class="bg-blue-400 h-full rounded-full transition-all duration-700 hover:brightness-110" style="width: 12%"></div>
+                                </div>
+                            </div>
+                            <div class="flex-grow">
+                                <div class="flex justify-between text-[10px] mb-1">
+                                    <span class="text-gray-500">食欲减退</span>
+                                    <span class="font-bold text-gray-700">5%</span>
+                                </div>
+                                <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden cursor-pointer" onclick="showToast('食欲减退', '点击查看详细分析：本周食欲减退占比5%，处于正常范围')">
+                                    <div class="bg-orange-400 h-full rounded-full transition-all duration-700 hover:brightness-110" style="width: 5%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-gray-400 bg-gray-50 p-3 rounded-xl leading-relaxed cursor-pointer hover:bg-orange-50 transition-colors" onclick="showToast('周报摘要', '本周异常行为频率低于平均水平20%，宠物状态表现良好。建议继续保持当前护理方案。')">
+                            <iconify-icon class="inline-block align-middle" icon="ph:info-bold"></iconify-icon>
+                            本周异常行为频率低于平均水平 20%，表现良好。点击查看详情
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="md:hidden fixed bottom-0 left-0 right-0 h-[84px] bg-white/80 backdrop-blur-xl border-t border-orange-50 px-2 flex justify-between items-center pb-6 z-50">
+        <a class="flex flex-col items-center gap-1 text-gray-400 flex-1 cursor-pointer" href="index.html">
+            <iconify-icon icon="ph:house-bold" width="22"></iconify-icon>
+            <span class="text-[9px] font-bold">首页</span>
+        </a>
+        <a class="flex flex-col items-center gap-1 text-orange-500 flex-1 cursor-pointer" href="behavior.html">
+            <iconify-icon icon="ph:dog-fill" width="22"></iconify-icon>
+            <span class="text-[9px] font-bold">行为感知</span>
+        </a>
+        <a class="flex flex-col items-center gap-1 text-gray-400 flex-1 cursor-pointer" href="health.html">
+            <iconify-icon icon="ph:heartbeat-bold" width="22"></iconify-icon>
+            <span class="text-[9px] font-bold">健康管家</span>
+        </a>
+        <a class="flex flex-col items-center gap-1 text-gray-400 flex-1 cursor-pointer" href="social.html">
+            <iconify-icon icon="ph:users-three-bold" width="22"></iconify-icon>
+            <span class="text-[9px] font-bold">宠友圈</span>
+        </a>
+        <a class="flex flex-col items-center gap-1 text-gray-400 flex-1 cursor-pointer" href="personal.html">
+            <iconify-icon icon="ph:user-circle-bold" width="22"></iconify-icon>
+            <span class="text-[9px] font-bold">我的</span>
+        </a>
+    </div>
+
+    <script>
+        const recordsData = [{
+            id: 'BHE-20260503',
+            time: '今天 14:20',
+            confidence: 98,
+            behavior: '自主玩耍',
+            emotion: '愉快',
+            duration: '02:45',
+            statusColor: 'bg-green-500',
+            confColor: 'bg-green-100 text-green-600',
+            thumbnail: '7.png',
+            videoSrc: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            emoji: '😊',
+            conclusionTitle: '综合结论：情绪激昂',
+            conclusionSub: '综合分析肢体语言与声学特征',
+            conclusionDesc: '您上传的视频显示，宠物表现出极高的社交意愿和运动活力。建议趁此时机进行一些户外互动。',
+            visualLabel: '奔跑跳跃',
+            visualIntensity: '高强度',
+            audioLabel: '欢快吠叫',
+            audioDb: '55dB',
+            suggestions: ['进行20分钟接球游戏', '奖励一次磨牙零食'],
+            tag: '玩耍',
+            markers: [
+                { time: 3, color: 'bg-green-400', label: '奔跑' },
+                { time: 12, color: 'bg-orange-400', label: '玩耍' },
+                { time: 25, color: 'bg-blue-400', label: '休息' },
+                { time: 38, color: 'bg-yellow-400', label: '吠叫' },
+            ]
+        }, {
+            id: 'BHE-20260502',
+            time: '昨天 10:15',
+            confidence: 85,
+            behavior: '焦虑徘徊',
+            emotion: '不安',
+            duration: '05:12',
+            statusColor: 'bg-orange-500',
+            confColor: 'bg-orange-100 text-orange-600',
+            thumbnail: '8.png',
+            videoSrc: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            emoji: '😟',
+            conclusionTitle: '综合结论：轻度焦虑',
+            conclusionSub: '检测到重复性徘徊行为',
+            conclusionDesc: '宠物表现出持续的徘徊和频繁的嗅探行为，可能因环境变化或分离焦虑引起。建议增加安抚互动。',
+            visualLabel: '来回踱步',
+            visualIntensity: '中强度',
+            audioLabel: '低频呜咽',
+            audioDb: '38dB',
+            suggestions: ['使用安抚信息素扩散器', '增加30分钟陪伴时间', '提供咀嚼玩具分散注意力'],
+            tag: '焦虑',
+            markers: [
+                { time: 5, color: 'bg-orange-400', label: '徘徊' },
+                { time: 18, color: 'bg-red-400', label: '呜咽' },
+                { time: 35, color: 'bg-orange-400', label: '嗅探' },
+            ]
+        }, {
+            id: 'BHE-20260501',
+            time: '05月01日 16:40',
+            confidence: 96,
+            behavior: '深度睡眠',
+            emotion: '放松',
+            duration: '45:20',
+            statusColor: 'bg-blue-500',
+            confColor: 'bg-blue-100 text-blue-600',
+            thumbnail: 'qqw.png',
+            videoSrc: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            emoji: '😴',
+            conclusionTitle: '综合结论：深度休息中',
+            conclusionSub: '检测到REM睡眠特征',
+            conclusionDesc: '宠物处于高质量睡眠状态，呼吸平稳，偶有轻微肢体抽动（正常REM表现）。睡眠质量评分：优秀。',
+            visualLabel: '静卧闭眼',
+            visualIntensity: '低强度',
+            audioLabel: '平稳呼吸',
+            audioDb: '22dB',
+            suggestions: ['保持环境安静', '不要打扰睡眠', '确保睡眠区域舒适温暖'],
+            tag: '休息',
+            markers: [
+                { time: 2, color: 'bg-blue-400', label: '入睡' },
+                { time: 20, color: 'bg-indigo-400', label: 'REM睡眠' },
+                { time: 40, color: 'bg-blue-400', label: '浅睡' },
+            ]
+        }, {
+            id: 'BHE-20260429',
+            time: '04月29日 08:15',
+            confidence: 92,
+            behavior: '进食饮水',
+            emotion: '满足',
+            duration: '08:30',
+            statusColor: 'bg-yellow-500',
+            confColor: 'bg-yellow-100 text-yellow-600',
+            thumbnail: 'qqww.png',
+            videoSrc: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            emoji: '😋',
+            conclusionTitle: '综合结论：进食正常',
+            conclusionSub: '咀嚼节奏稳定，食欲良好',
+            conclusionDesc: '宠物进食过程流畅，咀嚼充分，饮水量适中。表明当前饮食方案适宜，消化系统健康。',
+            visualLabel: '规律咀嚼',
+            visualIntensity: '中等强度',
+            audioLabel: '咀嚼声清晰',
+            audioDb: '42dB',
+            suggestions: ['继续保持当前喂食计划', '确保新鲜饮水供应', '可适量添加益生菌'],
+            tag: '进食',
+            markers: [
+                { time: 1, color: 'bg-yellow-400', label: '开始进食' },
+                { time: 5, color: 'bg-yellow-400', label: '饮水' },
+                { time: 7, color: 'bg-green-400', label: '舔舐' },
+            ]
+        }, {
+            id: 'BHE-20260428',
+            time: '04月28日 19:00',
+            confidence: 88,
+            behavior: '社交互动',
+            emotion: '兴奋',
+            duration: '12:15',
+            statusColor: 'bg-pink-500',
+            confColor: 'bg-pink-100 text-pink-600',
+            thumbnail: 'qwer.png',
+            videoSrc: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            emoji: '🎉',
+            conclusionTitle: '综合结论：社交活跃',
+            conclusionSub: '与其他宠物互动频繁且友好',
+            conclusionDesc: '视频显示宠物积极参与社交，尾巴摇摆频率高，姿态放松。社交能力评分：优秀。',
+            visualLabel: '摇尾互动',
+            visualIntensity: '高强度',
+            audioLabel: '友好低吠',
+            audioDb: '48dB',
+            suggestions: ['可安排更多社交活动', '注意监督互动安全', '社交后适当休息'],
+            tag: '玩耍',
+            markers: [
+                { time: 3, color: 'bg-pink-400', label: '接近' },
+                { time: 15, color: 'bg-orange-400', label: '追逐' },
+                { time: 28, color: 'bg-green-400', label: '并排' },
+            ]
+        }];
+
+        let currentRecordIndex = 0;
+        let activeFilter = 'all';
+        let isDetailVideoPlaying = false;
+        let isModalVideoPlaying = false;
+        let skeletonVisible = false;
+        let heatmapVisible = true;
+        let mobileMenuOpen = false;
+        let detailVideoDuration = 0;
+        let modalVideoDuration = 0;
+
+        function showToast(title, message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className =
+                'bg-white rounded-2xl px-5 py-3.5 shadow-xl border border-gray-100 pointer-events-auto toast-enter flex items-start gap-3 min-w-[260px] max-w-[380px]';
+            toast.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 flex-shrink-0 mt-0.5">
+                    <iconify-icon icon="ph:info-bold" width="16"></iconify-icon>
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-gray-800">${title}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">${message}</p>
+                </div>
+                <button class="flex-shrink-0 text-gray-300 hover:text-gray-500 transition-colors ml-1" onclick="this.parentElement.remove()">
+                    <iconify-icon icon="ph:x-bold" width="14"></iconify-icon>
+                </button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('toast-exit');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function toggleMobileMenu() {
+            mobileMenuOpen = !mobileMenuOpen;
+            const menu = document.getElementById('mobile-menu');
+            const overlay = document.getElementById('mobile-overlay');
+            if (mobileMenuOpen) {
+                menu.style.transform = 'translateX(0)';
+                overlay.style.opacity = '1';
+                overlay.style.pointerEvents = 'auto';
+                document.body.style.overflow = 'hidden';
+            } else {
+                menu.style.transform = 'translateX(100%)';
+                overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none';
+                document.body.style.overflow = '';
+            }
+        }
+
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const uploadProgress = document.getElementById('upload-progress');
+        const filePreviewList = document.getElementById('file-preview-list');
+        const analyzingIndicator = document.getElementById('analyzing-indicator');
+        const uploadIcon = document.getElementById('upload-icon');
+        const uploadTitle = document.getElementById('upload-title');
+        const uploadSubtitle = document.getElementById('upload-subtitle');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('drop-zone--over'),
+                false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('drop-zone--over'),
+                false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            if (files.length === 0) return;
+            filePreviewList.innerHTML = '';
+            filePreviewList.classList.remove('hidden');
+            Array.from(files).forEach((file, i) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.createElement('div');
+                    preview.className =
+                        'flex items-center gap-3 bg-gray-50 rounded-xl p-3 border border-gray-100 slide-in-up';
+                    const isVideo = file.type.startsWith('video/');
+                    preview.innerHTML = `
+                        <div class="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-black relative">
+                            ${isVideo ? 
+                                `<div class="absolute inset-0 flex items-center justify-center text-white/70"><iconify-icon icon="ph:video-bold" width="20"></iconify-icon></div>` : 
+                                `<img src="${e.target.result}" class="w-full h-full object-cover" alt="preview"/>`}
+                        </div>
+                        <div class="flex-grow min-w-0">
+                            <p class="text-xs font-medium text-gray-700 truncate">${file.name}</p>
+                            <p class="text-[10px] text-gray-400">${(file.size/1024/1024).toFixed(1)} MB · ${isVideo?'视频':'图片'}</p>
+                        </div>
+                        <button class="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0" onclick="this.parentElement.remove(); if(document.getElementById('file-preview-list').children.length===0) document.getElementById('file-preview-list').classList.add('hidden');">
+                            <iconify-icon icon="ph:x-circle-bold" width="18"></iconify-icon>
+                        </button>
+                    `;
+                    filePreviewList.appendChild(preview);
+                };
+                reader.readAsDataURL(file);
+            });
+            startUploadSimulation(files);
+        }
+
+        function startUploadSimulation(files) {
+            uploadProgress.classList.remove('hidden');
+            analyzingIndicator.classList.add('hidden');
+            const progressFill = document.getElementById('progress-fill');
+            const uploadPercent = document.getElementById('upload-percent');
+            const uploadFilename = document.getElementById('upload-filename');
+            uploadFilename.textContent = files.length > 1 ? `${files.length} 个文件上传中...` : files[0].name;
+            let progress = 0;
+            progressFill.style.width = '0%';
+            uploadPercent.textContent = '0%';
+            const interval = setInterval(() => {
+                progress += Math.random() * 12 + 4;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    progressFill.style.width = '100%';
+                    uploadPercent.textContent = '100%';
+                    uploadFilename.textContent = '上传完成 ✓';
+                    setTimeout(() => {
+                        uploadProgress.classList.add('hidden');
+                        startAnalyzingAnimation();
+                    }, 800);
+                } else {
+                    progressFill.style.width = Math.round(progress) + '%';
+                    uploadPercent.textContent = Math.round(progress) + '%';
+                }
+            }, 180);
+        }
+
+        function startAnalyzingAnimation() {
+            analyzingIndicator.classList.remove('hidden');
+            const detail = document.getElementById('analyzing-detail');
+            const steps = [
+                '识别行为特征 · 分析情绪状态',
+                '提取关键帧 · 姿态估计中...',
+                '声学特征分析 · 音频解码中...',
+                '多模态融合分析 · 生成结论...',
+                '分析完成！✅',
+            ];
+            let step = 0;
+            const stepInterval = setInterval(() => {
+                step++;
+                if (step < steps.length) {
+                    detail.textContent = steps[step];
+                } else {
+                    clearInterval(stepInterval);
+                    setTimeout(() => {
+                        analyzingIndicator.classList.add('hidden');
+                        filePreviewList.classList.add('hidden');
+                        filePreviewList.innerHTML = '';
+                        uploadIcon.style.transform = 'scale(1)';
+                        uploadTitle.textContent = '点击或拖拽文件到这里';
+                        uploadSubtitle.textContent = '我们将通过AI模型为您深度解析宠物的行为与情绪';
+                        showToast('分析完成 🎉',
+                            'AI已完成行为解析，新的分析记录已添加到记录列表中。请查看下方解译记录。');
+                        addNewRecord();
+                    }, 600);
+                }
+            }, 800);
+            uploadIcon.style.transform = 'scale(1.1)';
+            uploadTitle.textContent = 'AI正在解析中...';
+            uploadSubtitle.textContent = '请稍候，正在深度分析上传内容';
+        }
+
+        function addNewRecord() {
+           const newRecord = {
+    id: 'BHE-' + new Date().toISOString().slice(0, 10).replace(/-/g, ''),
+    time: '刚刚 ' + new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+    confidence: 97,
+    behavior: '邀请玩耍',
+    emotion: '兴奋期待',
+    duration: '02:45',
+    statusColor: 'bg-green-500',
+    confColor: 'bg-green-100 text-green-600',
+    thumbnail: '7.png',
+    videoSrc: '狗狗玩耍解译.MOV',
+    emoji: '🐕',
+    conclusionTitle: '综合结论：邀请互动玩耍',
+    conclusionSub: '综合分析肢体语言与叫声特征',
+    conclusionDesc: '您的狗狗前肢趴地、臀部高高翘起，尾巴快速摇摆，伴随急促的邀玩叫声。这是典型的犬类"游戏邀请"姿势，表明它此刻精力充沛、情绪高昂，非常希望您陪它玩耍互动。',
+    visualLabel: '翘臀摇尾',
+    visualIntensity: '活泼兴奋',
+    audioLabel: '急促邀玩吠叫',
+    audioDb: '58dB',
+    suggestions: ['立即回应互动邀请，进行5分钟拉扯玩具游戏', '带它到户外进行15-20分钟自由活动', '互动后奖励一小块健康零食'],
+    tag: '玩耍',
+    markers: [
+        { time: 2, color: 'bg-green-400', label: '趴地准备' },
+        { time: 5, color: 'bg-orange-400', label: '翘臀摇尾' },
+        { time: 10, color: 'bg-yellow-400', label: '邀玩吠叫' },
+        { time: 18, color: 'bg-pink-400', label: '兴奋跳跃' },
+    ]
+};
+            recordsData.unshift(newRecord);
+            currentRecordIndex = 0;
+            renderRecords();
+            selectRecord(0);
+            filterByTag('all', document.querySelector('#filter-tags button[data-filter="all"]'));
+            showToast('记录已添加', `新记录 ${newRecord.id} 已添加到列表顶部`);
+        }
+
+        function renderRecords(filteredData = null) {
+            const container = document.getElementById('records-container');
+            const noRecords = document.getElementById('no-records');
+            const data = filteredData || recordsData;
+            if (data.length === 0) {
+                container.innerHTML = '';
+                noRecords.classList.remove('hidden');
+                return;
+            }
+            noRecords.classList.add('hidden');
+            container.innerHTML = data.map((record, index) => {
+                const actualIndex = recordsData.indexOf(record);
+                const isActive = actualIndex === currentRecordIndex;
+                return `
+                <div class="flex items-center gap-4 p-4 rounded-2xl transition-all border cursor-pointer group ${isActive ? 'bg-orange-50 border-orange-200 shadow-sm' : 'border-transparent hover:bg-orange-50/50 hover:border-orange-100'}" 
+                     onclick="selectRecord(${actualIndex})" data-record-index="${actualIndex}">
+                    <div class="w-20 h-20 rounded-xl overflow-hidden shrink-0 shadow-md relative">
+                        <img alt="Behavior Clip" class="w-full h-full object-cover" src="${record.thumbnail}"/>
+                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                            <div class="w-8 h-8 rounded-full bg-white/80 flex items-center justify-center text-gray-600 opacity-0 group-hover:opacity-100 transition-all transform scale-75 group-hover:scale-100">
+                                <iconify-icon icon="ph:play-fill" width="14"></iconify-icon>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-xs font-medium text-gray-400">${record.time}</span>
+                            <span class="px-2 py-0.5 ${record.confColor} rounded text-[10px] font-bold flex-shrink-0">置信度 ${record.confidence}%</span>
+                        </div>
+                        <h4 class="font-bold text-gray-800 mb-1 flex items-center gap-2 text-sm">
+                            ${record.behavior}
+                            <span class="inline-block w-2 h-2 rounded-full ${record.statusColor} flex-shrink-0"></span>
+                        </h4>
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <span class="text-xs text-gray-500 flex items-center gap-1">
+                                <iconify-icon icon="ph:smiley-bold"></iconify-icon> 情绪：${record.emotion}
+                            </span>
+                            <span class="text-xs text-gray-500 flex items-center gap-1">
+                                <iconify-icon icon="ph:clock-bold"></iconify-icon> 时长：${record.duration}
+                            </span>
+                        </div>
+                    </div>
+                    <button class="w-8 h-8 rounded-full bg-white text-gray-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm border border-gray-100 flex-shrink-0 hover:bg-orange-100 hover:text-orange-500" 
+                            onclick="event.stopPropagation(); openVideoModal();" title="放大查看视频">
+                        <iconify-icon icon="ph:arrows-out-bold" width="14"></iconify-icon>
+                    </button>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function selectRecord(index) {
+            currentRecordIndex = index;
+            const record = recordsData[index];
+            updateDetailPanel(record);
+            renderRecords();
+            setTimeout(() => {
+                const el = document.querySelector(`[data-record-index="${index}"]`);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+
+        function updateDetailPanel(record) {
+            detailVideo.src = record.videoSrc;
+            modalVideo.src = record.videoSrc;
+            document.getElementById('detail-id').textContent = 'ID: #' + record.id;
+            document.getElementById('conclusion-emoji').textContent = record.emoji;
+            document.getElementById('conclusion-title').textContent = record.conclusionTitle;
+            document.getElementById('conclusion-subtitle').textContent = record.conclusionSub;
+            document.getElementById('conclusion-desc').textContent = record.conclusionDesc;
+            document.getElementById('visual-label').textContent = record.visualLabel;
+            document.getElementById('visual-intensity').textContent = record.visualIntensity;
+            document.getElementById('audio-label').textContent = record.audioLabel;
+            document.getElementById('audio-db').textContent = record.audioDb;
+            const suggestionsList = document.getElementById('suggestions-list');
+            suggestionsList.innerHTML = record.suggestions.map(s =>
+                `<li class="flex items-center gap-2"><iconify-icon icon="ph:check-circle-bold"></iconify-icon> ${s}</li>`
+            ).join('');
+            const markersContainer = document.getElementById('behavior-markers');
+            markersContainer.innerHTML = record.markers.map(m =>
+                `<span class="w-2 h-2 rounded-full ${m.color} cursor-pointer hover:scale-150 transition-transform" data-time="${m.time}" data-label="${m.label}" title="${m.label} (00:${String(m.time).padStart(2,'0')})" onclick="event.stopPropagation(); jumpToMarker(${m.time})"></span>`
+            ).join('');
+            resetDetailVideo();
+            const rightPanel = document.getElementById('right-panel');
+            const detailBox = rightPanel.querySelector('.slide-in-up');
+            if (detailBox) {
+                detailBox.classList.remove('slide-in-up');
+                void detailBox.offsetWidth;
+                detailBox.classList.add('slide-in-up');
+            }
+            resetDetailVideo();
+        }
+
+        function filterRecords() {
+            const query = document.getElementById('search-input').value.toLowerCase().trim();
+            let filtered = recordsData;
+            if (activeFilter !== 'all') {
+                filtered = filtered.filter(r => r.tag === activeFilter);
+            }
+            if (query) {
+                filtered = filtered.filter(r =>
+                    r.behavior.toLowerCase().includes(query) ||
+                    r.emotion.toLowerCase().includes(query) ||
+                    r.time.toLowerCase().includes(query) ||
+                    r.id.toLowerCase().includes(query)
+                );
+            }
+            renderRecords(filtered);
+            if (filtered.length > 0 && !filtered.includes(recordsData[currentRecordIndex])) {
+                const newIndex = recordsData.indexOf(filtered[0]);
+                if (newIndex >= 0) {
+                    currentRecordIndex = newIndex;
+                    updateDetailPanel(recordsData[newIndex]);
+                }
+            }
+        }
+
+        function filterByTag(tag, btn) {
+            activeFilter = tag;
+            document.querySelectorAll('#filter-tags button').forEach(b => {
+                b.classList.remove('bg-orange-500', 'text-white');
+                b.classList.add('bg-gray-100', 'text-gray-500');
+            });
+            btn.classList.remove('bg-gray-100', 'text-gray-500');
+            btn.classList.add('bg-orange-500', 'text-white');
+            filterRecords();
+        }
+
+        const detailVideo = document.getElementById('detail-video');
+        const detailPlayOverlay = document.getElementById('detail-play-overlay');
+        const detailPlayIcon = document.getElementById('detail-play-icon');
+        const detailMiniPlayIcon = document.getElementById('detail-mini-play-icon');
+        const detailCurrentTime = document.getElementById('detail-current-time');
+        const detailDuration = document.getElementById('detail-duration');
+        const detailProgressFill = document.getElementById('detail-progress-fill');
+        const detailProgressThumb = document.getElementById('detail-progress-thumb');
+        const detailControls = document.getElementById('detail-controls');
+
+        detailVideo.addEventListener('loadedmetadata', () => {
+            detailVideoDuration = detailVideo.duration;
+            detailDuration.textContent = formatTime(detailVideoDuration);
+        });
+
+        detailVideo.addEventListener('timeupdate', () => {
+            if (detailVideoDuration > 0) {
+                const pct = (detailVideo.currentTime / detailVideoDuration) * 100;
+                detailProgressFill.style.width = pct + '%';
+                detailProgressThumb.style.left = pct + '%';
+                detailCurrentTime.textContent = formatTime(detailVideo.currentTime);
+            }
+        });
+
+        detailVideo.addEventListener('play', () => {
+            isDetailVideoPlaying = true;
+            detailPlayIcon.setAttribute('icon', 'ph:pause-fill');
+            detailMiniPlayIcon.setAttribute('icon', 'ph:pause-fill');
+            detailPlayOverlay.style.opacity = '0';
+        });
+
+        detailVideo.addEventListener('pause', () => {
+            isDetailVideoPlaying = false;
+            detailPlayIcon.setAttribute('icon', 'ph:play-fill');
+            detailMiniPlayIcon.setAttribute('icon', 'ph:play-fill');
+            detailPlayOverlay.style.opacity = '1';
+        });
+
+        detailVideo.addEventListener('ended', () => {
+            isDetailVideoPlaying = false;
+            detailPlayIcon.setAttribute('icon', 'ph:play-fill');
+            detailMiniPlayIcon.setAttribute('icon', 'ph:play-fill');
+            detailPlayOverlay.style.opacity = '1';
+            detailProgressFill.style.width = '0%';
+            detailProgressThumb.style.left = '0%';
+            detailCurrentTime.textContent = '00:00';
+        });
+
+        function toggleDetailPlayPause() {
+            if (isDetailVideoPlaying) {
+                detailVideo.pause();
+            } else {
+                detailVideo.play().catch(() => {
+                    showToast('提示', '视频暂无法播放，请尝试放大查看或检查网络连接');
+                });
+            }
+        }
+
+        function seekDetailVideo(event) {
+            if (detailVideoDuration === 0) return;
+            const rect = event.target.getBoundingClientRect();
+            const pct = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+            detailVideo.currentTime = pct * detailVideoDuration;
+        }
+
+        function resetDetailVideo() {
+            detailVideo.pause();
+            detailVideo.currentTime = 0;
+            isDetailVideoPlaying = false;
+            detailPlayIcon.setAttribute('icon', 'ph:play-fill');
+            detailMiniPlayIcon.setAttribute('icon', 'ph:play-fill');
+            detailPlayOverlay.style.opacity = '1';
+            detailProgressFill.style.width = '0%';
+            detailProgressThumb.style.left = '0%';
+            detailCurrentTime.textContent = '00:00';
+            detailVideoDuration = detailVideo.duration || 0;
+            detailDuration.textContent = formatTime(detailVideoDuration);
+        }
+
+        function jumpToMarker(seconds) {
+            if (detailVideoDuration === 0 && detailVideo.duration) {
+                detailVideoDuration = detailVideo.duration;
+                detailDuration.textContent = formatTime(detailVideoDuration);
+            }
+            const targetTime = Math.min(seconds, detailVideoDuration || seconds);
+            detailVideo.currentTime = targetTime;
+            if (!isDetailVideoPlaying) {
+                detailVideo.play().catch(() => {});
+            }
+            showToast('跳转至标记', `已跳转到 ${formatTime(targetTime)} - 行为标记点`);
+            document.querySelectorAll('#behavior-markers span').forEach(s => s.classList.remove('marker-active'));
+            const marker = document.querySelector(`#behavior-markers span[data-time="${seconds}"]`);
+            if (marker) marker.classList.add('marker-active');
+            setTimeout(() => {
+                document.querySelectorAll('#behavior-markers span').forEach(s => s.classList.remove(
+                    'marker-active'));
+            }, 2000);
+        }
+
+        const modalVideo = document.getElementById('modal-video');
+        const modalPlayBtn = document.getElementById('modal-play-btn');
+        const modalPlayIcon = document.getElementById('modal-play-icon');
+        const modalVideoOverlay = document.getElementById('modal-video-overlay');
+        const modalProgressFill = document.getElementById('modal-progress-fill');
+        const modalProgressThumb = document.getElementById('modal-progress-thumb');
+        const modalTimeCurrent = document.getElementById('modal-time-current');
+        const modalTimeDuration = document.getElementById('modal-time-duration');
+        const videoModal = document.getElementById('video-modal');
+
+        modalVideo.addEventListener('loadedmetadata', () => {
+            modalVideoDuration = modalVideo.duration;
+            modalTimeDuration.textContent = formatTime(modalVideoDuration);
+        });
+
+        modalVideo.addEventListener('timeupdate', () => {
+            if (modalVideoDuration > 0) {
+                const pct = (modalVideo.currentTime / modalVideoDuration) * 100;
+                modalProgressFill.style.width = pct + '%';
+                modalProgressThumb.style.left = pct + '%';
+                modalTimeCurrent.textContent = formatTime(modalVideo.currentTime);
+            }
+        });
+
+        modalVideo.addEventListener('play', () => {
+            isModalVideoPlaying = true;
+            modalPlayIcon.setAttribute('icon', 'ph:pause-fill');
+            modalVideoOverlay.style.opacity = '0';
+        });
+
+        modalVideo.addEventListener('pause', () => {
+            isModalVideoPlaying = false;
+            modalPlayIcon.setAttribute('icon', 'ph:play-fill');
+            modalVideoOverlay.style.opacity = '1';
+        });
+
+        modalVideo.addEventListener('ended', () => {
+            isModalVideoPlaying = false;
+            modalPlayIcon.setAttribute('icon', 'ph:play-fill');
+            modalVideoOverlay.style.opacity = '1';
+        });
+
+        function openVideoModal() {
+            videoModal.style.opacity = '1';
+            videoModal.style.pointerEvents = 'auto';
+            document.body.style.overflow = 'hidden';
+            modalVideo.currentTime = detailVideo.currentTime;
+            if (isDetailVideoPlaying) {
+                modalVideo.play().catch(() => {});
+                isModalVideoPlaying = true;
+                modalPlayIcon.setAttribute('icon', 'ph:pause-fill');
+                modalVideoOverlay.style.opacity = '0';
+            }
+        }
+
+        function closeVideoModal() {
+            videoModal.style.opacity = '0';
+            videoModal.style.pointerEvents = 'none';
+            document.body.style.overflow = '';
+            modalVideo.pause();
+            isModalVideoPlaying = false;
+            detailVideo.currentTime = modalVideo.currentTime;
+            if (isDetailVideoPlaying) {
+                detailVideo.play().catch(() => {});
+            }
+        }
+
+        function toggleModalVideo() {
+            if (isModalVideoPlaying) {
+                modalVideo.pause();
+            } else {
+                modalVideo.play().catch(() => {
+                    showToast('提示', '视频加载中，请稍候...');
+                });
+            }
+        }
+
+        function seekModalVideo(event) {
+            if (modalVideoDuration === 0) return;
+            const rect = document.getElementById('modal-progress-bar').getBoundingClientRect();
+            const pct = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+            modalVideo.currentTime = pct * modalVideoDuration;
+        }
+
+        function skipModalVideo(seconds) {
+            modalVideo.currentTime = Math.max(0, Math.min(modalVideoDuration, modalVideo.currentTime + seconds));
+        }
+
+        function toggleModalFullscreen() {
+            const container = document.getElementById('modal-video-container');
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                container.requestFullscreen().catch(() => {});
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && videoModal.style.opacity === '1') {
+                closeVideoModal();
+            }
+        });
+
+        videoModal.addEventListener('click', function(e) {
+            if (e.target === videoModal) {
+                closeVideoModal();
+            }
+        });
+
+        function toggleSkeletonOverlay() {
+            skeletonVisible = !skeletonVisible;
+            const overlay = document.getElementById('skeleton-overlay');
+            const btn = document.getElementById('skeleton-toggle-btn');
+            if (skeletonVisible) {
+                overlay.classList.remove('hidden');
+                btn.classList.add('bg-orange-100', 'text-orange-500');
+                btn.classList.remove('bg-gray-100', 'text-gray-500');
+                showToast('骨架分析已开启', '正在模拟AI姿态估计可视化');
+            } else {
+                overlay.classList.add('hidden');
+                btn.classList.remove('bg-orange-100', 'text-orange-500');
+                btn.classList.add('bg-gray-100', 'text-gray-500');
+            }
+        }
+
+        function toggleHeatmapOverlay() {
+            heatmapVisible = !heatmapVisible;
+            const overlay = document.getElementById('heatmap-overlay');
+            const btn = document.getElementById('heatmap-toggle-btn');
+            if (heatmapVisible) {
+                overlay.style.opacity = '0.4';
+                btn.classList.add('bg-orange-100', 'text-orange-500');
+                btn.classList.remove('bg-gray-100', 'text-gray-500');
+            } else {
+                overlay.style.opacity = '0';
+                btn.classList.remove('bg-orange-100', 'text-orange-500');
+                btn.classList.add('bg-gray-100', 'text-gray-500');
+            }
+        }
+
+        function formatTime(seconds) {
+            if (isNaN(seconds) || seconds < 0) return '00:00';
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        }
+
+        function refreshAnalysis() {
+            const btn = event.target.closest('button');
+            const origHTML = btn.innerHTML;
+            btn.innerHTML =
+                '<iconify-icon icon="ph:spinner-bold" class="animate-spin" width="16"></iconify-icon> 刷新中...';
+            btn.disabled = true;
+            setTimeout(() => {
+                btn.innerHTML = origHTML;
+                btn.disabled = false;
+                showToast('数据已刷新', '行为统计数据已更新至最新');
+                updateChartPeriod('week');
+            }, 1200);
+        }
+
+        const chartDom = document.getElementById('behavior-chart');
+        const myChart = echarts.init(chartDom);
+        let chartInstance = myChart;
+
+        function getChartOption(data) {
+            return {
+                tooltip: {
+                    trigger: 'item',
+                    backgroundColor: '#fff',
+                    borderColor: '#f0f0f0',
+                    textStyle: { color: '#333', fontSize: 12 },
+                    formatter: '{b}: {c}% ({d}%占比)'
+                },
+                legend: {
+                    orient: 'vertical',
+                    right: '5%',
+                    top: 'middle',
+                    itemWidth: 10,
+                    itemHeight: 10,
+                    textStyle: { fontSize: 11, color: '#64748B' },
+                },
+                series: [{
+                    name: '行为占比',
+                    type: 'pie',
+                    radius: ['50%', '80%'],
+                    center: ['35%', '50%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+                    label: { show: false },
+                    emphasis: {
+                        label: { show: true, fontSize: 13, fontWeight: 'bold' },
+                        scaleSize: 12,
+                    },
+                    labelLine: { show: false },
+                    data: data,
+                }],
+            };
+        }
+
+        const defaultChartData = [
+            { value: 35, name: '深度睡眠', itemStyle: { color: '#93C5FD' } },
+            { value: 25, name: '日常走动', itemStyle: { color: '#FDBA74' } },
+            { value: 22, name: '自主玩耍', itemStyle: { color: '#86EFAC' } },
+            { value: 10, name: '进食饮水', itemStyle: { color: '#FDE047' } },
+            { value: 8, name: '其他行为', itemStyle: { color: '#E2E8F0' } },
+        ];
+
+        chartInstance.setOption(getChartOption(defaultChartData));
+
+        chartInstance.on('click', function(params) {
+            if (params.name) {
+                showToast('行为筛选', `正在筛选与"${params.name}"相关的记录...`);
+                const tagMap = { '深度睡眠': '休息', '日常走动': '焦虑', '自主玩耍': '玩耍', '进食饮水': '进食' };
+                const tag = tagMap[params.name] || 'all';
+                const btn = document.querySelector(`#filter-tags button[data-filter="${tag}"]`);
+                if (btn) filterByTag(tag, btn);
+            }
+        });
+
+        function updateChartPeriod(period) {
+            const variations = {
+                'week': [
+                    { value: 35, name: '深度睡眠', itemStyle: { color: '#93C5FD' } },
+                    { value: 25, name: '日常走动', itemStyle: { color: '#FDBA74' } },
+                    { value: 22, name: '自主玩耍', itemStyle: { color: '#86EFAC' } },
+                    { value: 10, name: '进食饮水', itemStyle: { color: '#FDE047' } },
+                    { value: 8, name: '其他行为', itemStyle: { color: '#E2E8F0' } },
+                ],
+                'month': [
+                    { value: 30, name: '深度睡眠', itemStyle: { color: '#93C5FD' } },
+                    { value: 20, name: '日常走动', itemStyle: { color: '#FDBA74' } },
+                    { value: 28, name: '自主玩耍', itemStyle: { color: '#86EFAC' } },
+                    { value: 15, name: '进食饮水', itemStyle: { color: '#FDE047' } },
+                    { value: 7, name: '其他行为', itemStyle: { color: '#E2E8F0' } },
+                ],
+                'quarter': [
+                    { value: 32, name: '深度睡眠', itemStyle: { color: '#93C5FD' } },
+                    { value: 18, name: '日常走动', itemStyle: { color: '#FDBA74' } },
+                    { value: 26, name: '自主玩耍', itemStyle: { color: '#86EFAC' } },
+                    { value: 16, name: '进食饮水', itemStyle: { color: '#FDE047' } },
+                    { value: 8, name: '其他行为', itemStyle: { color: '#E2E8F0' } },
+                ],
+            };
+            chartInstance.setOption(getChartOption(variations[period] || defaultChartData));
+            showToast('统计周期已切换', `已切换至：${period==='week'?'本周':period==='month'?'本月':'本季度'}`);
+        }
+
+        window.addEventListener('resize', () => chartInstance.resize());
+
+        function init() {
+            renderRecords();
+            selectRecord(0);
+            if (detailVideo.duration) {
+                detailVideoDuration = detailVideo.duration;
+                detailDuration.textContent = formatTime(detailVideoDuration);
+            }
+            if (modalVideo.duration) {
+                modalVideoDuration = modalVideo.duration;
+                modalTimeDuration.textContent = formatTime(modalVideoDuration);
+            }
+            const heatmapBtn = document.getElementById('heatmap-toggle-btn');
+            if (heatmapBtn && heatmapVisible) {
+                heatmapBtn.classList.add('bg-orange-100', 'text-orange-500');
+                heatmapBtn.classList.remove('bg-gray-100', 'text-gray-500');
+            }
+            console.log('🐾 PetMind 行为感知页面已就绪');
+            console.log('   - 视频播放器已初始化');
+            console.log('   - ' + recordsData.length + ' 条记录已加载');
+            console.log('   - 所有交互功能已激活');
+        }
+
+        init();
+    </script>
+</body>
+</html>

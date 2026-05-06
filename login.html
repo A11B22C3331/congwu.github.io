@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>登录 · 注册 — PetMind</title>
+    <script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js">
+    </script>
+    <script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js">
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #FFF9F5;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        /* 背景装饰 */
+        .bg-decoration {
+            position: fixed;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .deco-circle-1 {
+            width: 420px;
+            height: 420px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 141, 108, 0.18) 0%, rgba(255, 141, 108, 0) 70%);
+            top: -120px;
+            right: -100px;
+        }
+        .deco-circle-2 {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 180, 100, 0.15) 0%, rgba(255, 180, 100, 0) 70%);
+            bottom: -80px;
+            left: -80px;
+        }
+        .deco-circle-3 {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 200, 140, 0.12) 0%, rgba(255, 200, 140, 0) 70%);
+            top: 40%;
+            left: 55%;
+        }
+
+        /* 毛玻璃卡片 */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .card-shadow {
+            box-shadow: 0 20px 50px -12px rgba(255, 141, 108, 0.18),
+                0 8px 20px -8px rgba(255, 141, 108, 0.12),
+                0 0 0 1px rgba(255, 150, 100, 0.05) inset;
+        }
+
+        /* 输入框样式 */
+        .input-field {
+            width: 100%;
+            padding: 14px 16px;
+            padding-left: 44px;
+            border-radius: 16px;
+            border: 2px solid #f0e8e2;
+            background: #fdfaf7;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            outline: none;
+            color: #333;
+            font-family: 'Noto Sans SC', sans-serif;
+            box-sizing: border-box;
+        }
+        .input-field:focus {
+            border-color: #FF8D6C;
+            background: #fff;
+            box-shadow: 0 0 0 6px rgba(255, 141, 108, 0.06);
+        }
+        .input-field::placeholder {
+            color: #c4b8ae;
+        }
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #c4b8ae;
+            font-size: 20px;
+            pointer-events: none;
+            transition: color 0.3s ease;
+            z-index: 2;
+        }
+        .input-wrapper:focus-within .input-icon {
+            color: #FF8D6C;
+        }
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        /* 切换标签 */
+        .tab-btn {
+            position: relative;
+            padding: 10px 28px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            background: transparent;
+            color: #b0a49a;
+            white-space: nowrap;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+        .tab-btn.active {
+            color: #FF8D6C;
+        }
+        .tab-slider {
+            position: absolute;
+            bottom: -2px;
+            height: 3px;
+            border-radius: 3px;
+            background: #FF8D6C;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            left: 0;
+            width: 50%;
+        }
+        .tab-container {
+            position: relative;
+            display: inline-flex;
+            border-bottom: 2px solid #f0e8e2;
+            margin-bottom: 24px;
+        }
+        .tab-slider.right {
+            left: 50%;
+        }
+
+        /* 按钮 */
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            background: linear-gradient(135deg, #FF8D6C 0%, #FF6B4A 100%);
+            color: #fff;
+            letter-spacing: 0.5px;
+            font-family: 'Noto Sans SC', sans-serif;
+            box-shadow: 0 8px 24px -6px rgba(255, 107, 74, 0.35);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 32px -8px rgba(255, 107, 74, 0.45);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 12px -4px rgba(255, 107, 74, 0.3);
+        }
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .btn-outline {
+            width: 100%;
+            padding: 14px;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid #f0e8e2;
+            background: transparent;
+            color: #888;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+        .btn-outline:hover {
+            border-color: #FF8D6C;
+            color: #FF8D6C;
+            background: rgba(255, 141, 108, 0.03);
+        }
+
+        /* 动画 */
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-slide-up {
+            animation: fadeSlideUp 0.5s ease forwards;
+        }
+        @keyframes pawBounce {
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            30% {
+                transform: translateY(-14px) rotate(-3deg);
+            }
+            60% {
+                transform: translateY(-4px) rotate(2deg);
+            }
+            80% {
+                transform: translateY(-8px) rotate(-1deg);
+            }
+        }
+        .paw-float {
+            animation: pawBounce 3s ease-in-out infinite;
+        }
+        .paw-float-delayed {
+            animation: pawBounce 3s ease-in-out 0.8s infinite;
+        }
+        .paw-float-delayed2 {
+            animation: pawBounce 3s ease-in-out 1.6s infinite;
+        }
+
+        /* Toast提示 */
+        .toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-120px);
+            z-index: 100;
+            padding: 12px 24px;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: transform 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
+            pointer-events: none;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        .toast-success {
+            background: #e8f8ec;
+            color: #2d8a4e;
+            border: 1px solid #c8e6d0;
+        }
+        .toast-error {
+            background: #fff0ef;
+            color: #c0392b;
+            border: 1px solid #fdd;
+        }
+        .toast-info {
+            background: #fff8f0;
+            color: #b86e2d;
+            border: 1px solid #ffe4c8;
+        }
+
+        /* 密码可见切换 */
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #c4b8ae;
+            padding: 6px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            z-index: 2;
+            background: none;
+            border: none;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+        }
+        .toggle-password:hover {
+            color: #FF8D6C;
+            background: rgba(255, 141, 108, 0.06);
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .desktop-brand {
+                display: none;
+            }
+            .mobile-brand {
+                display: flex;
+            }
+            .form-card {
+                max-width: 440px;
+                margin: 0 12px;
+                border-radius: 28px;
+                padding: 28px 22px;
+            }
+            .deco-circle-1 {
+                width: 200px;
+                height: 200px;
+                top: -60px;
+                right: -60px;
+            }
+            .deco-circle-2 {
+                width: 150px;
+                height: 150px;
+                bottom: -40px;
+                left: -40px;
+            }
+        }
+        @media (min-width: 769px) {
+            .desktop-brand {
+                display: flex;
+            }
+            .mobile-brand {
+                display: none;
+            }
+            .form-card {
+                border-radius: 32px;
+                padding: 40px 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 背景装饰 -->
+    <div class="bg-decoration deco-circle-1"></div>
+    <div class="bg-decoration deco-circle-2"></div>
+    <div class="bg-decoration deco-circle-3"></div>
+
+    <!-- Toast提示 -->
+    <div id="toast" class="toast"></div>
+
+    <!-- 主容器 -->
+    <div class="relative z-10 w-full max-w-5xl mx-auto px-4 py-8 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
+
+        <!-- ========== 左侧品牌区(桌面端) ========== -->
+        <div class="desktop-brand flex-col items-center text-center space-y-5 flex-shrink-0 animate-fade-slide-up" style="max-width: 340px;">
+            <!-- Logo -->
+            <div class="w-20 h-20 bg-orange-500 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-orange-200/60 mb-2"
+            style="font-size: 0;">
+            <iconify-icon icon="ph:paw-print-fill" width="44"></iconify-icon>
+        </div>
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-orange-600 to-orange-400 bg-clip-text text-transparent">
+            PetMind
+        </h1>
+        <p class="text-gray-500 text-sm leading-relaxed max-w-xs">
+            智能宠物健康管理平台<br>用科技守护每一位毛孩子的健康
+        </p>
+        <!-- 浮动爪印装饰 -->
+        <div class="flex gap-3 mt-4">
+            <span class="paw-float text-3xl opacity-50">🐾</span>
+            <span class="paw-float-delayed text-3xl opacity-40">🐾</span>
+            <span class="paw-float-delayed2 text-3xl opacity-50">🐾</span>
+        </div>
+        <!-- 信任标识 -->
+        <div class="pt-4 space-y-1 text-xs text-gray-400">
+            <p class="flex items-center justify-center gap-1.5">
+                <iconify-icon icon="ph:shield-check-bold" class="text-green-400" width="16"></iconify-icon>
+                数据安全加密
+            </p>
+            <p class="flex items-center justify-center gap-1.5">
+                <iconify-icon icon="ph:users-bold" class="text-blue-400" width="16"></iconify-icon>
+                已服务 50,000+ 宠主
+            </p>
+        </div>
+    </div>
+
+    <!-- ========== 右侧表单卡片 ========== -->
+    <div class="form-card glass-card card-shadow w-full max-w-[440px] animate-fade-slide-up" style="animation-delay: 0.15s;">
+
+        <!-- 移动端品牌标识 -->
+        <div class="mobile-brand items-center gap-3 mb-5">
+            <div class="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-200/50 flex-shrink-0"
+            style="font-size: 0;">
+            <iconify-icon icon="ph:paw-print-fill" width="26"></iconify-icon>
+        </div>
+        <span class="text-xl font-bold bg-gradient-to-r from-orange-600 to-orange-400 bg-clip-text text-transparent">PetMind</span>
+    </div>
+
+    <!-- 切换标签 -->
+    <div class="tab-container" id="tabContainer">
+        <button class="tab-btn active" id="tabLogin" onclick="switchTab('login')">
+            <iconify-icon icon="ph:sign-in-bold" width="18" class="inline mr-1.5 -mt-0.5"></iconify-icon>
+            登录
+        </button>
+        <button class="tab-btn" id="tabRegister" onclick="switchTab('register')">
+            <iconify-icon icon="ph:user-plus-bold" width="18" class="inline mr-1.5 -mt-0.5"></iconify-icon>
+            注册
+        </button>
+        <div class="tab-slider" id="tabSlider"></div>
+    </div>
+
+    <!-- ========== 登录表单 ========== -->
+    <form id="loginForm" class="space-y-1" autocomplete="off" novalidate>
+        <div class="input-wrapper">
+            <iconify-icon icon="ph:user-bold" class="input-icon" width="20"></iconify-icon>
+            <input
+            class="input-field"
+            type="text"
+            id="loginUsername"
+            placeholder="请输入用户名"
+            autocomplete="username"
+            required
+            >
+        </div>
+        <div class="input-wrapper">
+            <iconify-icon icon="ph:lock-bold" class="input-icon" width="20"></iconify-icon>
+            <input
+            class="input-field"
+            type="password"
+            id="loginPassword"
+            placeholder="请输入密码"
+            autocomplete="current-password"
+            required
+            >
+            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('loginPassword', this)" tabindex="-1">
+                <iconify-icon icon="ph:eye-bold" width="20"></iconify-icon>
+            </button>
+        </div>
+        <!-- 记住我 -->
+        <div class="flex items-center gap-2 mb-1 px-0.5">
+            <input type="checkbox" id="rememberMe" class="w-4 h-4 rounded accent-orange-500 cursor-pointer" checked>
+            <label for="rememberMe" class="text-xs text-gray-500 cursor-pointer select-none">保持登录状态</label>
+            <span class="flex-1"></span>
+            <button type="button" class="text-xs text-orange-400 hover:text-orange-500 transition-colors font-medium"
+            onclick="fillPresetAccount()" tabindex="-1">
+            快速填充测试账号
+        </button>
+    </div>
+    <button type="submit" class="btn-primary mt-2">
+        <span class="flex items-center justify-center gap-2">
+            登 录
+            <iconify-icon icon="ph:arrow-right-bold" width="18"></iconify-icon>
+        </span>
+    </button>
+    <p class="text-[10px] text-gray-400 text-center mt-3">
+        测试账号：<span class="font-mono text-orange-400 font-medium">12344321</span> / 密码：<span class="font-mono text-orange-400 font-medium">666666</span>
+    </p>
+</form>
+
+<!-- ========== 注册表单(默认隐藏) ========== -->
+<form id="registerForm" class="space-y-1 hidden" autocomplete="off" novalidate>
+    <div class="input-wrapper">
+        <iconify-icon icon="ph:user-bold" class="input-icon" width="20"></iconify-icon>
+        <input
+        class="input-field"
+        type="text"
+        id="regUsername"
+        placeholder="请设置用户名（至少3位）"
+        autocomplete="off"
+        required
+        minlength="3"
+        >
+    </div>
+    <div class="input-wrapper">
+        <iconify-icon icon="ph:lock-bold" class="input-icon" width="20"></iconify-icon>
+        <input
+        class="input-field"
+        type="password"
+        id="regPassword"
+        placeholder="请设置密码（至少6位）"
+        autocomplete="new-password"
+        required
+        minlength="6"
+        >
+        <button type="button" class="toggle-password" onclick="togglePasswordVisibility('regPassword', this)" tabindex="-1">
+            <iconify-icon icon="ph:eye-bold" width="20"></iconify-icon>
+        </button>
+    </div>
+    <div class="input-wrapper">
+        <iconify-icon icon="ph:lock-key-bold" class="input-icon" width="20"></iconify-icon>
+        <input
+        class="input-field"
+        type="password"
+        id="regConfirmPassword"
+        placeholder="请再次输入密码"
+        autocomplete="new-password"
+        required
+        minlength="6"
+        >
+        <button type="button" class="toggle-password" onclick="togglePasswordVisibility('regConfirmPassword', this)" tabindex="-1">
+            <iconify-icon icon="ph:eye-bold" width="20"></iconify-icon>
+        </button>
+    </div>
+    <!-- 密码匹配实时提示 -->
+    <p id="passwordMatchHint" class="text-[10px] text-gray-400 px-0.5 hidden">
+        <iconify-icon icon="ph:info-bold" width="12" class="inline -mt-0.5"></iconify-icon>
+        两次输入的密码需一致
+    </p>
+    <button type="submit" class="btn-primary mt-2">
+        <span class="flex items-center justify-center gap-2">
+            注 册
+            <iconify-icon icon="ph:user-plus-bold" width="18"></iconify-icon>
+        </span>
+    </button>
+    <p class="text-[10px] text-gray-400 text-center mt-3">
+        注册即表示同意 <span class="text-orange-400 cursor-pointer hover:underline">服务条款</span> 和 <span class="text-orange-400 cursor-pointer hover:underline">隐私政策</span>
+    </p>
+</form>
+</div>
+</div>
+
+<script>
+    (function() {
+        // ========== 预设账号 ==========
+        const PRESET_USERNAME = '12344321';
+        const PRESET_PASSWORD = '666666';
+        const STORAGE_KEY_USERS = 'petmind_users';
+        const STORAGE_KEY_LOGGED_IN = 'petmind_loggedInUser';
+
+        // ========== DOM元素 ==========
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const tabLogin = document.getElementById('tabLogin');
+        const tabRegister = document.getElementById('tabRegister');
+        const tabSlider = document.getElementById('tabSlider');
+        const toast = document.getElementById('toast');
+        const passwordMatchHint = document.getElementById('passwordMatchHint');
+
+        // 输入框
+        const loginUsername = document.getElementById('loginUsername');
+        const loginPassword = document.getElementById('loginPassword');
+        const regUsername = document.getElementById('regUsername');
+        const regPassword = document.getElementById('regPassword');
+        const regConfirmPassword = document.getElementById('regConfirmPassword');
+        const rememberMe = document.getElementById('rememberMe');
+
+        let currentTab = 'login';
+        let toastTimer = null;
+
+        // ========== Toast提示 ==========
+        function showToast(message, type = 'info') {
+            if (toastTimer) clearTimeout(toastTimer);
+            toast.textContent = message;
+            toast.className = 'toast toast-' + type + ' show';
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+                toastTimer = null;
+            }, 2800);
+        }
+
+        // ========== 标签切换 ==========
+        function switchTab(tab) {
+            if (currentTab === tab) return;
+            currentTab = tab;
+            if (tab === 'login') {
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+                tabLogin.classList.add('active');
+                tabRegister.classList.remove('active');
+                tabSlider.classList.remove('right');
+                passwordMatchHint.classList.add('hidden');
+                // 清空注册表单
+                regUsername.value = '';
+                regPassword.value = '';
+                regConfirmPassword.value = '';
+            } else {
+                registerForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+                tabRegister.classList.add('active');
+                tabLogin.classList.remove('active');
+                tabSlider.classList.add('right');
+                // 清空登录表单
+                loginUsername.value = '';
+                loginPassword.value = '';
+            }
+            // 清除所有输入框的焦点
+            document.activeElement?.blur();
+        }
+        window.switchTab = switchTab;
+
+        // ========== 密码可见性切换 ==========
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('iconify-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('icon', 'ph:eye-closed-bold');
+            } else {
+                input.type = 'password';
+                icon.setAttribute('icon', 'ph:eye-bold');
+            }
+        }
+        window.togglePasswordVisibility = togglePasswordVisibility;
+
+        // ========== 快速填充预设账号 ==========
+        function fillPresetAccount() {
+            if (currentTab !== 'login') {
+                switchTab('login');
+            }
+            loginUsername.value = PRESET_USERNAME;
+            loginPassword.value = PRESET_PASSWORD;
+            // 触发一个微小的动画反馈
+            loginUsername.focus();
+            loginUsername.style.borderColor = '#FF8D6C';
+            setTimeout(() => {
+                loginUsername.style.borderColor = '#f0e8e2';
+            }, 800);
+            showToast('已填充测试账号，点击登录即可体验 🐾', 'info');
+        }
+        window.fillPresetAccount = fillPresetAccount;
+
+        // ========== 获取已注册用户 ==========
+        function getRegisteredUsers() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY_USERS);
+                return data ? JSON.parse(data) : {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        // ========== 保存注册用户 ==========
+        function saveRegisteredUser(username, password) {
+            const users = getRegisteredUsers();
+            users[username] = password;
+            localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+        }
+
+        // ========== 设置登录状态 ==========
+        function setLoggedIn(username) {
+            const storage = rememberMe.checked ? localStorage : sessionStorage;
+            storage.setItem(STORAGE_KEY_LOGGED_IN, JSON.stringify({
+                username: username,
+                loginTime: new Date().toISOString()
+            }));
+            // 同时在localStorage也存一份用户名方便首页读取
+            localStorage.setItem('petmind_currentUser', username);
+        }
+
+        // ========== 验证登录 ==========
+        function verifyLogin(username, password) {
+            // 先检查预设账号
+            if (username === PRESET_USERNAME && password === PRESET_PASSWORD) {
+                return { success: true, isPreset: true };
+            }
+            // 再检查注册用户
+            const users = getRegisteredUsers();
+            if (users[username] && users[username] === password) {
+                return { success: true, isPreset: false };
+            }
+            return { success: false };
+        }
+
+        // ========== 执行登录并跳转 ==========
+        function performLogin(username, password) {
+            setLoggedIn(username);
+            showToast('登录成功！正在跳转... 🎉', 'success');
+            const btn = loginForm.querySelector('.btn-primary');
+            btn.style.pointerEvents = 'none';
+            btn.style.opacity = '0.8';
+            btn.innerHTML =
+                '<span class="flex items-center justify-center gap-2"><iconify-icon icon="ph:circle-notch-bold" class="animate-spin" width="18"></iconify-icon> 登录中...</span>';
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 900);
+        }
+
+        // ========== 登录表单提交 ==========
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = loginUsername.value.trim();
+            const password = loginPassword.value;
+
+            if (!username) {
+                showToast('请输入用户名', 'error');
+                loginUsername.focus();
+                shakeElement(loginUsername);
+                return;
+            }
+            if (!password) {
+                showToast('请输入密码', 'error');
+                loginPassword.focus();
+                shakeElement(loginPassword);
+                return;
+            }
+
+            const result = verifyLogin(username, password);
+            if (result.success) {
+                performLogin(username, password);
+            } else {
+                showToast('用户名或密码错误，请重试', 'error');
+                shakeElement(loginForm);
+                loginPassword.value = '';
+                loginPassword.focus();
+            }
+        });
+
+        // ========== 注册表单提交 ==========
+        registerForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = regUsername.value.trim();
+            const password = regPassword.value;
+            const confirmPassword = regConfirmPassword.value;
+
+            // 验证用户名
+            if (!username) {
+                showToast('请设置用户名', 'error');
+                regUsername.focus();
+                shakeElement(regUsername);
+                return;
+            }
+            if (username.length < 3) {
+                showToast('用户名至少需要3个字符', 'error');
+                regUsername.focus();
+                shakeElement(regUsername);
+                return;
+            }
+            if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(username)) {
+                showToast('用户名只能包含中文、英文、数字和下划线', 'error');
+                regUsername.focus();
+                shakeElement(regUsername);
+                return;
+            }
+            // 检查是否与预设账号冲突
+            if (username === PRESET_USERNAME) {
+                showToast('该用户名已被占用，请换一个', 'error');
+                regUsername.focus();
+                shakeElement(regUsername);
+                return;
+            }
+            // 检查是否已被注册
+            const users = getRegisteredUsers();
+            if (users[username]) {
+                showToast('该用户名已被注册，请直接登录', 'error');
+                regUsername.focus();
+                shakeElement(regUsername);
+                return;
+            }
+            // 验证密码
+            if (!password) {
+                showToast('请设置密码', 'error');
+                regPassword.focus();
+                shakeElement(regPassword);
+                return;
+            }
+            if (password.length < 6) {
+                showToast('密码至少需要6位字符', 'error');
+                regPassword.focus();
+                shakeElement(regPassword);
+                return;
+            }
+            // 验证确认密码
+            if (password !== confirmPassword) {
+                showToast('两次输入的密码不一致', 'error');
+                regConfirmPassword.focus();
+                shakeElement(regConfirmPassword);
+                return;
+            }
+
+            // ========== 注册成功：保存账号，然后切换到登录页面自动登录 ==========
+            saveRegisteredUser(username, password);
+
+            // 先显示注册成功提示
+            showToast('注册成功！正在为您自动登录... 🎉', 'success');
+
+            // 获取注册按钮并禁用
+            const regBtn = registerForm.querySelector('.btn-primary');
+            regBtn.style.pointerEvents = 'none';
+            regBtn.style.opacity = '0.8';
+            regBtn.innerHTML =
+                '<span class="flex items-center justify-center gap-2"><iconify-icon icon="ph:circle-notch-bold" class="animate-spin" width="18"></iconify-icon> 注册成功...</span>';
+
+            // 短暂延迟后切换到登录标签页，并自动填充账号密码进行登录
+            setTimeout(() => {
+                // 恢复注册按钮状态
+                regBtn.style.pointerEvents = '';
+                regBtn.style.opacity = '';
+                regBtn.innerHTML =
+                    '<span class="flex items-center justify-center gap-2">注 册<iconify-icon icon="ph:user-plus-bold" width="18"></iconify-icon></span>';
+
+                // 切换到登录标签页
+                switchTab('login');
+
+                // 将注册的用户名和密码填入登录表单
+                loginUsername.value = username;
+                loginPassword.value = password;
+
+                // 短暂高亮用户名输入框
+                loginUsername.style.borderColor = '#FF8D6C';
+                loginUsername.style.background = '#fff';
+                setTimeout(() => {
+                    loginUsername.style.borderColor = '#f0e8e2';
+                    loginUsername.style.background = '#fdfaf7';
+                }, 1000);
+
+                // 再短暂延迟后自动提交登录表单
+                setTimeout(() => {
+                    const result = verifyLogin(username, password);
+                    if (result.success) {
+                        performLogin(username, password);
+                    }
+                }, 800);
+            }, 1200);
+        });
+
+        // ========== 确认密码实时检测 ==========
+        regConfirmPassword.addEventListener('input', function() {
+            const password = regPassword.value;
+            const confirm = regConfirmPassword.value;
+            if (confirm.length > 0 && password !== confirm) {
+                passwordMatchHint.classList.remove('hidden');
+                passwordMatchHint.style.color = '#e74c3c';
+                passwordMatchHint.innerHTML =
+                    '<iconify-icon icon="ph:warning-bold" width="12" class="inline -mt-0.5"></iconify-icon> 两次输入的密码不一致';
+            } else if (confirm.length > 0 && password === confirm) {
+                passwordMatchHint.classList.remove('hidden');
+                passwordMatchHint.style.color = '#27ae60';
+                passwordMatchHint.innerHTML =
+                    '<iconify-icon icon="ph:check-circle-bold" width="12" class="inline -mt-0.5"></iconify-icon> 密码匹配';
+                setTimeout(() => {
+                    if (regConfirmPassword.value === regPassword.value && regPassword.value.length >= 6) {
+                        passwordMatchHint.classList.add('hidden');
+                    }
+                }, 2000);
+            } else if (confirm.length === 0) {
+                passwordMatchHint.classList.add('hidden');
+            }
+        });
+
+        regPassword.addEventListener('input', function() {
+            // 当密码改变时重新触发确认密码检测
+            if (regConfirmPassword.value.length > 0) {
+                regConfirmPassword.dispatchEvent(new Event('input'));
+            }
+        });
+
+        // ========== 抖动动画 ==========
+        function shakeElement(el) {
+            el.style.transition = 'transform 0.08s ease';
+            el.style.transform = 'translateX(-6px)';
+            setTimeout(() => { el.style.transform = 'translateX(6px)'; }, 80);
+            setTimeout(() => { el.style.transform = 'translateX(-4px)'; }, 160);
+            setTimeout(() => { el.style.transform = 'translateX(3px)'; }, 240);
+            setTimeout(() => { el.style.transform = 'translateX(0)'; }, 320);
+            setTimeout(() => { el.style.transition = ''; }, 400);
+        }
+
+        // ========== 键盘快捷键 ==========
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+1 切换到登录
+            if (e.ctrlKey && e.key === '1') {
+                e.preventDefault();
+                switchTab('login');
+                loginUsername.focus();
+            }
+            // Ctrl+2 切换到注册
+            if (e.ctrlKey && e.key === '2') {
+                e.preventDefault();
+                switchTab('register');
+                regUsername.focus();
+            }
+        });
+
+        // ========== 页面加载初始化 ==========
+        function init() {
+            // 检查是否已登录（从其他标签页打开等场景）
+            const loggedIn = localStorage.getItem(STORAGE_KEY_LOGGED_IN) ||
+                sessionStorage.getItem(STORAGE_KEY_LOGGED_IN);
+            if (loggedIn) {
+                try {
+                    const userData = JSON.parse(loggedIn);
+                    if (userData.username) {
+                        // 已登录，提供直接进入首页的选项
+                        loginUsername.value = userData.username;
+                        loginUsername.style.borderColor = '#27ae60';
+                        loginUsername.style.background = '#f8fdf9';
+                        setTimeout(() => {
+                            loginUsername.style.borderColor = '#f0e8e2';
+                            loginUsername.style.background = '#fdfaf7';
+                        }, 2000);
+                        showToast('检测到登录状态，可直接进入首页 🏠', 'info');
+                        // 添加快速进入按钮
+                        addQuickEnterButton(userData.username);
+                    }
+                } catch (e) {
+                    // 数据损坏，清除
+                    localStorage.removeItem(STORAGE_KEY_LOGGED_IN);
+                    sessionStorage.removeItem(STORAGE_KEY_LOGGED_IN);
+                }
+            }
+        }
+
+        function addQuickEnterButton(username) {
+            const quickBtn = document.createElement('button');
+            quickBtn.type = 'button';
+            quickBtn.className = 'btn-outline mt-3';
+            quickBtn.id = 'quickEnterBtn';
+            quickBtn.innerHTML =
+                '<span class="flex items-center justify-center gap-2">以 <strong>' + username +
+                '</strong> 的身份直接进入 <iconify-icon icon="ph:arrow-right-bold" width="14"></iconify-icon></span>';
+            quickBtn.addEventListener('click', function() {
+                quickBtn.style.pointerEvents = 'none';
+                quickBtn.style.opacity = '0.7';
+                quickBtn.innerHTML =
+                    '<span class="flex items-center justify-center gap-2"><iconify-icon icon="ph:circle-notch-bold" class="animate-spin" width="14"></iconify-icon> 跳转中...</span>';
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 500);
+            });
+            loginForm.appendChild(quickBtn);
+            // 如果切换标签，移除这个按钮
+            const originalSwitchTab = switchTab;
+            window.switchTab = function(tab) {
+                const btn = document.getElementById('quickEnterBtn');
+                if (btn) btn.remove();
+                window.switchTab = originalSwitchTab;
+                originalSwitchTab(tab);
+            };
+        }
+
+        init();
+
+        // ========== 自动聚焦 ==========
+        // 页面加载后自动聚焦到用户名输入框
+        setTimeout(() => {
+            if (currentTab === 'login') {
+                loginUsername.focus();
+            }
+        }, 600);
+
+        console.log('🐾 PetMind 登录注册页面已就绪');
+        console.log('📋 测试账号：' + PRESET_USERNAME + ' / 密码：' + PRESET_PASSWORD);
+        console.log('💡 提示：Ctrl+1 切换到登录 | Ctrl+2 切换到注册');
+    })();
+</script>
+</body>
+</html>

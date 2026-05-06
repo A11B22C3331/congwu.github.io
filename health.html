@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>健康管家 - 身体指标追踪 + 异常自查</title>
+  <script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js">
+  </script>
+  <script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js">
+  </script>
+  <script src="https://modao.cc/agent-py/static/source/js/echarts.min.js">
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+    body { font-family: 'Noto Sans SC', sans-serif; background-color: #FFF9F5; color: #333; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); }
+    .card-shadow { box-shadow: 0 10px 25px -5px rgba(255, 141, 108, 0.1), 0 8px 10px -6px rgba(255, 141, 108, 0.08); }
+    .nav-link:hover { color: #FF8D6C; }
+    .nav-active { color: #FF8D6C; font-weight: 700; border-bottom: 2px solid #FF8D6C; }
+    .checkbox-custom:checked + label { background-color: #FF8D6C; color: white; border-color: #FF8D6C; }
+    .modal-overlay {
+      background-color: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .metric-card {
+      transition: all 0.2s ease;
+    }
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px -6px rgba(255,141,108,0.15);
+    }
+    @keyframes clickPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(0.96); }
+      100% { transform: scale(1); }
+    }
+    .click-animation {
+      animation: clickPulse 0.3s ease;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col pb-20 md:pb-0">
+
+<!-- 顶部导航栏 -->
+<header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-orange-50 px-4 md:px-8 py-4">
+  <div class="max-w-7xl mx-auto flex justify-between items-center">
+    <div class="flex items-center gap-2">
+      <div class="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-200">
+        <iconify-icon icon="ph:paw-print-fill" width="24"></iconify-icon>
+      </div>
+      <span class="text-xl font-bold bg-gradient-to-r from-orange-600 to-orange-400 bg-clip-text text-transparent hidden sm:block">PetMind</span>
+    </div>
+    <nav class="hidden md:flex items-center gap-8">
+      <a class="nav-link py-1" href="index.html">首页</a>
+      <a class="nav-link py-1" href="behavior.html">行为感知</a>
+      <a class="nav-link nav-active py-1" href="health.html">健康管家</a>
+      <a class="nav-link py-1" href="social.html">宠友圈</a>
+      <a class="nav-link py-1" href="personal.html">我的</a>
+    </nav>
+    <div class="flex items-center gap-4">
+      <span class="text-xs text-gray-400 hidden lg:block">2026年05月04日</span>
+      <button class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 md:hidden hover:bg-orange-100 hover:text-orange-500 transition-colors">
+        <iconify-icon icon="ph:list-bold" width="24"></iconify-icon>
+      </button>
+      <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 overflow-hidden border-2 border-orange-200">
+        <img alt="Pet Profile" class="w-full h-full object-cover" src="https://modao.cc/agent-py/media/generated_images/2026-05-03/7317a86f439f41ea80cacd25057b2cf4.jpg#desc=User%20Avatar"/>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="flex-grow max-w-7xl mx-auto w-full px-4 md:px-8 py-8">
+  <div class="flex flex-col gap-8">
+    <!-- 第一部分：总览看板 -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- 健康评分 & 智能提醒 -->
+      <div class="lg:col-span-4 space-y-6">
+        <div class="bg-gradient-to-br from-orange-400 to-pink-500 rounded-[32px] p-8 text-white shadow-xl shadow-orange-100 relative overflow-hidden h-full flex flex-col justify-between">
+          <iconify-icon class="absolute right-[-20px] top-[-20px] text-white/10" icon="ph:heart-beat-fill" width="200"></iconify-icon>
+          <div class="relative z-10">
+            <div class="flex justify-between items-start">
+              <div>
+                <h2 class="text-lg font-medium opacity-90">今日健康评分</h2>
+                <div class="text-6xl font-bold mt-2">92<span class="text-2xl opacity-60 ml-1">/100</span></div>
+              </div>
+              <div class="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs">状态优于 88% 同类</div>
+            </div>
+          </div>
+          <div class="relative z-10 mt-8">
+            <h3 class="text-sm font-bold mb-3 flex items-center gap-2">
+              <iconify-icon icon="ph:bell-ringing-bold"></iconify-icon>
+              智能提醒
+            </h3>
+            <div class="space-y-2">
+              <div class="bg-white/10 backdrop-blur-sm p-3 rounded-2xl flex items-center gap-3 border border-white/20">
+                <iconify-icon class="text-white" icon="ph:syringe-bold" width="20"></iconify-icon>
+                <div>
+                  <p class="text-xs font-bold">5月10日 狂犬疫苗接种</p>
+                  <p class="text-[10px] opacity-70">距离接种还有 7 天</p>
+                </div>
+              </div>
+              <div class="bg-white/10 backdrop-blur-sm p-3 rounded-2xl flex items-center gap-3 border border-white/20">
+                <iconify-icon class="text-white" icon="ph:bug-bold" width="20"></iconify-icon>
+                <div>
+                  <p class="text-xs font-bold">5月15日 体外驱虫</p>
+                  <p class="text-[10px] opacity-70">已备好福来恩滴剂</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 核心指标网格 -->
+      <div class="lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- 体温 -->
+        <div class="bg-white rounded-[24px] p-5 shadow-sm border border-orange-50 flex flex-col justify-between group metric-card cursor-pointer" onclick="openMetricDetail('temperature')">
+          <div>
+            <p class="text-xs text-gray-500">当前体温</p>
+            <p class="text-3xl font-bold mt-1">38.6<span class="text-sm font-normal ml-1 text-gray-400">℃</span></p>
+          </div>
+          <div class="mt-3">
+            <span class="text-[10px] px-2 py-0.5 bg-green-100 text-green-600 rounded-full">正常</span>
+          </div>
+        </div>
+        <!-- 体重 -->
+        <div class="bg-white rounded-[24px] p-5 shadow-sm border border-orange-50 flex flex-col justify-between group metric-card cursor-pointer" onclick="openMetricDetail('weight')">
+          <div>
+            <p class="text-xs text-gray-500">当前体重</p>
+            <p class="text-3xl font-bold mt-1">12.5<span class="text-sm font-normal ml-1 text-gray-400">kg</span></p>
+          </div>
+          <div class="mt-3">
+            <span class="text-[10px] px-2 py-0.5 bg-yellow-100 text-yellow-600 rounded-full">轻微超重</span>
+          </div>
+        </div>
+        <!-- 心率 -->
+        <div class="bg-white rounded-[24px] p-5 shadow-sm border border-orange-50 flex flex-col justify-between group metric-card cursor-pointer" onclick="openMetricDetail('heartrate')">
+          <div>
+            <p class="text-xs text-gray-500">静态心率</p>
+            <p class="text-3xl font-bold mt-1">82<span class="text-sm font-normal ml-1 text-gray-400">bpm</span></p>
+          </div>
+          <div class="mt-3">
+            <span class="text-[10px] px-2 py-0.5 bg-green-100 text-green-600 rounded-full">平稳</span>
+          </div>
+        </div>
+        <!-- 饮水 -->
+        <div class="bg-white rounded-[24px] p-5 shadow-sm border border-orange-50 flex flex-col justify-between group metric-card cursor-pointer" onclick="openMetricDetail('water')">
+          <div>
+            <p class="text-xs text-gray-500">今日饮水</p>
+            <p class="text-3xl font-bold mt-1">450<span class="text-sm font-normal ml-1 text-gray-400">ml</span></p>
+          </div>
+          <div class="mt-3">
+            <span class="text-[10px] px-2 py-0.5 bg-green-100 text-green-600 rounded-full">充足</span>
+          </div>
+        </div>
+        <!-- AI饮食运动建议 -->
+        <div class="col-span-2 md:col-span-2 bg-cream-50 rounded-[24px] p-6 border border-orange-100 bg-orange-50/30 flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-bold flex items-center gap-2 mb-3">
+              <iconify-icon class="text-orange-500" icon="ph:sparkle-bold"></iconify-icon>
+              AI 饮食运动建议
+            </h3>
+            <p class="text-xs text-gray-600 leading-relaxed" id="ai-advice-text">
+              大黄最近体重略有上升，建议今日减少 10% 的口粮，并增加 15 分钟的中强度户外活动（如快走）。由于今日气温较高，请保持饮水器水源充足且新鲜。
+            </p>
+          </div>
+          <button class="mt-4 text-xs text-orange-500 flex items-center gap-1 hover:text-orange-700 transition-colors self-start" onclick="refreshAdvice()">
+            <iconify-icon icon="ph:arrows-clockwise-bold" width="14"></iconify-icon> 刷新建议
+          </button>
+        </div>
+        <!-- 粪便AI入口 -->
+        <div class="col-span-2 md:col-span-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-[24px] p-6 text-white flex items-center justify-between hover:scale-[1.02] transition-transform cursor-pointer group relative" 
+             id="feces-ai-card" 
+             onclick="handleFecesClick()"
+             title="点击跳转粪便AI识别页面">
+          <div>
+            <h3 class="text-lg font-bold group-hover:drop-shadow-md transition-all">粪便 AI 识别</h3>
+            <p class="text-xs opacity-80 mt-1">点击上传照片，分析消化健康</p>
+          </div>
+          <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center group-hover:bg-white/30 transition-all">
+            <iconify-icon icon="ph:upload-bold" width="28"></iconify-icon>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 第二部分：指标趋势与异常联动 -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <!-- 指标趋势图表 -->
+      <div class="lg:col-span-8 bg-white rounded-[32px] p-6 md:p-8 card-shadow border border-gray-50">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h2 class="text-xl font-bold flex items-center gap-2">
+              <iconify-icon class="text-orange-500" icon="ph:chart-line-up-bold"></iconify-icon>
+              健康趋势追踪
+            </h2>
+            <p class="text-xs text-gray-400 mt-1">数据更新于 2026年05月04日 10:00</p>
+          </div>
+          <div class="flex gap-2" id="trend-buttons">
+            <button class="px-4 py-1.5 rounded-full bg-orange-100 text-orange-600 text-xs font-medium transition-colors" data-metric="weight" onclick="switchTrend('weight', this)">体重</button>
+            <button class="px-4 py-1.5 rounded-full bg-gray-100 text-gray-500 text-xs font-medium transition-colors" data-metric="heartrate" onclick="switchTrend('heartrate', this)">心率</button>
+            <button class="px-4 py-1.5 rounded-full bg-gray-100 text-gray-500 text-xs font-medium transition-colors" data-metric="steps" onclick="switchTrend('steps', this)">步数</button>
+          </div>
+        </div>
+        <div class="h-[300px] w-full chart-container" id="chart-trend"></div>
+        <div class="mt-6 p-4 bg-orange-50/50 rounded-2xl border border-orange-100">
+          <div class="flex items-start gap-3">
+            <iconify-icon class="text-orange-500 mt-0.5" icon="ph:info-bold"></iconify-icon>
+            <div>
+              <h4 class="text-xs font-bold text-orange-800">AI 趋势总结</h4>
+              <p class="text-xs text-orange-700/80 mt-1 leading-relaxed">
+                过去 7 天体重持续缓慢上升（+0.3kg），心率波动范围正常。但监测到凌晨活动量异常增加，可能存在夜间焦躁或瘙痒情况。建议结合下方的<span class="font-bold underline cursor-pointer" onclick="document.getElementById('symptom-checker').scrollIntoView({behavior:'smooth'})">症状自查</span>进一步确认。
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 异常提醒联动卡片 -->
+      <div class="lg:col-span-4 flex flex-col gap-6">
+        <div class="bg-red-50 rounded-[32px] p-6 border border-red-100 flex-grow">
+          <div class="w-12 h-12 rounded-full bg-red-100 text-red-500 flex items-center justify-center mb-4">
+            <iconify-icon icon="ph:warning-octagon-bold" width="28"></iconify-icon>
+          </div>
+          <h3 class="text-lg font-bold text-red-800">监测到异常！</h3>
+          <p class="text-sm text-red-700/70 mt-2 leading-relaxed">
+            系统检测到大黄最近有频繁抓挠耳部的行为，且夜间活动量超标。
+          </p>
+          <div class="mt-4 space-y-2">
+            <div class="flex items-center gap-2 text-xs text-red-700 bg-white/60 p-2 rounded-xl">
+              <span class="w-2 h-2 rounded-full bg-red-500"></span> 耳部抓挠频率 +45%
+            </div>
+            <div class="flex items-center gap-2 text-xs text-red-700 bg-white/60 p-2 rounded-xl">
+              <span class="w-2 h-2 rounded-full bg-orange-500"></span> 凌晨活动量 异常偏高
+            </div>
+          </div>
+          <button class="mt-6 w-full py-3 bg-red-500 text-white rounded-2xl font-bold shadow-lg shadow-red-200 hover:bg-red-600 transition-colors flex items-center justify-center gap-2" onclick="document.getElementById('symptom-checker').scrollIntoView({behavior:'smooth'})">
+            立即开始症状自查
+            <iconify-icon icon="ph:arrow-right-bold"></iconify-icon>
+          </button>
+        </div>
+        <div class="bg-white rounded-[32px] p-6 border border-orange-50 card-shadow">
+          <h3 class="text-sm font-bold mb-4">月度健康档案 (4月)</h3>
+          <div class="space-y-4">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-gray-500 text-xs">数据完整度</span>
+              <span class="font-bold">98%</span>
+            </div>
+            <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+              <div class="bg-green-500 h-full w-[98%]"></div>
+            </div>
+            <p class="text-[11px] text-gray-400">4月份共生成 4 份周报，大黄整体健康状态优，建议继续保持。</p>
+            <button class="w-full py-2 bg-gray-50 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-100 transition-colors" onclick="openArchiveDetail()">查看详细档案</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 第三部分：症状自查模块 -->
+    <section class="bg-white rounded-[32px] p-6 md:p-10 card-shadow border border-gray-50" id="symptom-checker">
+      <div class="text-center max-w-2xl mx-auto mb-10">
+        <h2 class="text-2xl font-bold">智能症状自查</h2>
+        <p class="text-sm text-gray-400 mt-2">勾选宠物出现的症状，AI 将协助分析可能的原因及就医建议</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10" id="symptom-grid">
+        <div class="relative">
+          <input class="hidden checkbox-custom" id="symp-1" type="checkbox" onchange="updateSymptomSummary()"/>
+          <label class="flex items-center gap-3 p-4 rounded-2xl border border-gray-100 cursor-pointer hover:border-orange-200 transition-all text-sm font-medium" for="symp-1">
+            <iconify-icon icon="ph:drop-half-bottom-bold"></iconify-icon> 呕吐/恶心
+          </label>
+        </div>
+        <div class="relative">
+          <input class="hidden checkbox-custom" id="symp-2" type="checkbox" onchange="updateSymptomSummary()"/>
+          <label class="flex items-center gap-3 p-4 rounded-2xl border border-gray-100 cursor-pointer hover:border-orange-200 transition-all text-sm font-medium" for="symp-2">
+            <iconify-icon icon="ph:toilet-paper-bold"></iconify-icon> 腹泻/软便
+          </label>
+        </div>
+        <div class="relative">
+          <input class="hidden checkbox-custom" id="symp-3" type="checkbox" onchange="updateSymptomSummary()"/>
+          <label class="flex items-center gap-3 p-4 rounded-2xl border border-gray-100 cursor-pointer hover:border-orange-200 transition-all text-sm font-medium" for="symp-3">
+            <iconify-icon icon="ph:cookie-bold"></iconify-icon> 食欲不振
+          </label>
+        </div>
+        <div class="relative">
+          <input class="hidden checkbox-custom" id="symp-4" type="checkbox" onchange="updateSymptomSummary()"/>
+          <label class="flex items-center gap-3 p-4 rounded-2xl border border-gray-100 cursor-pointer hover:border-orange-200 transition-all text-sm font-medium" for="symp-4">
+            <iconify-icon icon="ph:moon-stars-bold"></iconify-icon> 精神萎靡
+          </label>
+        </div>
+        <div class="relative">
+          <input class="hidden checkbox-custom" id="symp-5" type="checkbox" onchange="updateSymptomSummary()"/>
+          <label class="flex items-center gap-3 p-4 rounded-2xl border border-gray-100 cursor-pointer hover:border-orange-200 transition-all text-sm font-medium" for="symp-5">
+            <iconify-icon icon="ph:wind-bold"></iconify-icon> 咳嗽/打喷嚏
+          </label>
+        </div>
+        <div class="relative">
+          <input class="hidden checkbox-custom" id="symp-6" type="checkbox" onchange="updateSymptomSummary()"/>
+          <label class="flex items-center gap-3 p-4 rounded-2xl border border-gray-100 cursor-pointer hover:border-orange-200 transition-all text-sm font-medium" for="symp-6">
+            <iconify-icon icon="ph:lungs-bold"></iconify-icon> 呼吸困难
+          </label>
+        </div>
+        <div class="relative">
+          <input class="hidden checkbox-custom" id="symp-7" type="checkbox" onchange="updateSymptomSummary()"/>
+          <label class="flex items-center gap-3 p-4 rounded-2xl border border-gray-100 cursor-pointer hover:border-orange-200 transition-all text-sm font-medium" for="symp-7">
+            <iconify-icon icon="ph:arrows-down-up-bold"></iconify-icon> 体重下降
+          </label>
+        </div>
+        <div class="relative">
+          <input class="hidden checkbox-custom" id="symp-8" type="checkbox" onchange="updateSymptomSummary()"/>
+          <label class="flex items-center gap-3 p-4 rounded-2xl border border-gray-100 cursor-pointer hover:border-orange-200 transition-all text-sm font-medium" for="symp-8">
+            <iconify-icon icon="ph:mask-sad-bold"></iconify-icon> 异常行为/瘙痒
+          </label>
+        </div>
+      </div>
+      <div class="bg-gray-50 rounded-[24px] p-8 border border-dashed border-gray-200">
+        <div id="check-result-placeholder">
+          <div class="text-center py-10">
+            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+              <iconify-icon icon="ph:magnifying-glass-bold" width="32"></iconify-icon>
+            </div>
+            <p class="text-gray-400 text-sm" id="symptom-placeholder-text">选择上述症状后点击下方分析按钮</p>
+            <button id="analyze-btn" class="mt-6 px-10 py-3 bg-orange-500 text-white rounded-2xl font-bold shadow-lg shadow-orange-100 hover:bg-orange-600 transition-all" onclick="analyzeSymptoms()">开始智能分析</button>
+          </div>
+        </div>
+        <div class="hidden" id="check-result">
+          <div class="flex flex-col md:flex-row gap-8">
+            <div class="flex-1 space-y-6">
+              <div>
+                <div class="flex items-center gap-2 mb-2 text-red-600">
+                  <iconify-icon icon="ph:first-aid-kit-fill" width="20"></iconify-icon>
+                  <h4 class="font-bold">可能的原因分析</h4>
+                </div>
+                <ul class="space-y-2" id="cause-list">
+                  <li class="bg-white p-3 rounded-xl text-sm border border-orange-50 flex justify-between items-center">
+                    <span>1. 外耳炎 / 寄生虫感染 (高度契合)</span>
+                    <span class="text-[10px] px-2 py-0.5 bg-red-100 text-red-500 rounded-full">高风险</span>
+                  </li>
+                  <li class="bg-white p-3 rounded-xl text-sm border border-orange-50 flex justify-between items-center">
+                    <span>2. 过敏性皮炎 (可能)</span>
+                    <span class="text-[10px] px-2 py-0.5 bg-yellow-100 text-yellow-500 rounded-full">中风险</span>
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <div class="flex items-center gap-2 mb-2 text-blue-600">
+                  <iconify-icon icon="ph:info-fill" width="20"></iconify-icon>
+                  <h4 class="font-bold">就医建议</h4>
+                </div>
+                <p class="text-sm text-gray-600 leading-relaxed bg-white p-4 rounded-xl border border-orange-50" id="advice-text">
+                  大黄近期表现出频繁甩头和耳部瘙痒，结合凌晨活动量增加，极有可能是耳道感染。建议尽快使用专业洗耳液，若耳道内有褐色分泌物或异味，需就医进行耳分泌物化验，以排除耳痒螨。
+                </p>
+              </div>
+            </div>
+            <div class="w-full md:w-64 flex flex-col items-center justify-center p-6 bg-red-50 rounded-3xl border border-red-100">
+              <span class="text-xs text-red-600 font-bold uppercase tracking-wider mb-2">紧急程度评估</span>
+              <div class="text-4xl font-black text-red-600 mb-2" id="urgency-level">黄色</div>
+              <span class="text-[10px] text-red-500 text-center">建议 48 小时内线下诊所检查</span>
+              <div class="mt-6 space-y-2 w-full">
+                <button class="w-full py-2 bg-white text-orange-500 rounded-xl text-[10px] font-bold border border-orange-200 shadow-sm" onclick="window.location.href='appointment.html'">预约最近医院</button>
+                <button class="w-full py-2 bg-orange-500 text-white rounded-xl text-[10px] font-bold shadow-sm" onclick="window.location.href='online-consultation.html'">咨询在线医生</button>
+              </div>
+            </div>
+          </div>
+          <div class="mt-6 text-center">
+            <button class="text-xs text-gray-500 underline hover:text-orange-500 transition-colors" onclick="resetSymptomCheck()">重新选择症状</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 第四部分：功能卡片区域（已修改为跳转子页面） -->
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="bg-white p-6 rounded-[24px] card-shadow border border-gray-50 flex items-center gap-4 hover:bg-orange-50 transition-colors cursor-pointer group" onclick="window.location.href='online-consultation.html'">
+        <div class="w-12 h-12 rounded-2xl bg-orange-100 text-orange-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+          <iconify-icon icon="ph:stethoscope-bold" width="24"></iconify-icon>
+        </div>
+        <div>
+          <h4 class="text-sm font-bold">在线问诊</h4>
+          <p class="text-[10px] text-gray-400 mt-0.5">连线资深宠物医生</p>
+        </div>
+      </div>
+      <div class="bg-white p-6 rounded-[24px] card-shadow border border-gray-50 flex items-center gap-4 hover:bg-blue-50 transition-colors cursor-pointer group" onclick="window.location.href='appointment.html'">
+        <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+          <iconify-icon icon="ph:hospital-bold" width="24"></iconify-icon>
+        </div>
+        <div>
+          <h4 class="text-sm font-bold">挂号预约</h4>
+          <p class="text-[10px] text-gray-400 mt-0.5">快速预约线下门店</p>
+        </div>
+      </div>
+      <div class="bg-white p-6 rounded-[24px] card-shadow border border-gray-50 flex items-center gap-4 hover:bg-green-50 transition-colors cursor-pointer group" onclick="window.location.href='health-records.html'">
+        <div class="w-12 h-12 rounded-2xl bg-green-100 text-green-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+          <iconify-icon icon="ph:files-bold" width="24"></iconify-icon>
+        </div>
+        <div>
+          <h4 class="text-sm font-bold">健康记录</h4>
+          <p class="text-[10px] text-gray-400 mt-0.5">管理历次病历档案</p>
+        </div>
+      </div>
+      <div class="bg-white p-6 rounded-[24px] card-shadow border border-gray-50 flex items-center gap-4 hover:bg-purple-50 transition-colors cursor-pointer group" onclick="window.location.href='health-shop.html'">
+        <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+          <iconify-icon icon="ph:shopping-cart-bold" width="24"></iconify-icon>
+        </div>
+        <div>
+          <h4 class="text-sm font-bold">健康优选</h4>
+          <p class="text-[10px] text-gray-400 mt-0.5">科学定制营养方案</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="bg-white border-t border-orange-50 py-8 px-4 mt-12 mb-20 md:mb-0">
+  <div class="max-w-7xl mx-auto text-center">
+    <p class="text-xs text-gray-400">© 2026 PetMind 智能宠物健康管理平台. 当前日期: 2026年05月04日</p>
+  </div>
+</footer>
+
+<!-- 移动端底部导航 -->
+<div class="md:hidden fixed bottom-0 left-0 right-0 h-[84px] bg-white/80 backdrop-blur-xl border-t border-orange-50 px-2 flex justify-between items-center pb-6 z-50">
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="index.html">
+    <iconify-icon icon="ph:house-bold" width="22"></iconify-icon>
+    <span class="text-[9px] font-bold">首页</span>
+  </a>
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="behavior.html">
+    <iconify-icon icon="ph:dog-bold" width="22"></iconify-icon>
+    <span class="text-[9px] font-bold">行为感知</span>
+  </a>
+  <a class="flex flex-col items-center gap-1 text-orange-500 flex-1" href="health.html">
+    <iconify-icon icon="ph:heartbeat-fill" width="22"></iconify-icon>
+    <span class="text-[9px] font-bold">健康管家</span>
+  </a>
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="social.html">
+    <iconify-icon icon="ph:users-three-bold" width="22"></iconify-icon>
+    <span class="text-[9px] font-bold">宠友圈</span>
+  </a>
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="personal.html">
+    <iconify-icon icon="ph:user-circle-bold" width="22"></iconify-icon>
+    <span class="text-[9px] font-bold">我的</span>
+  </a>
+</div>
+
+<!-- 指标详情模态框 -->
+<div class="fixed inset-0 z-[100] modal-overlay flex items-center justify-center p-4" id="metric-modal-overlay" onclick="closeMetricModal()">
+  <div class="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xl font-bold" id="metric-modal-title">指标详情</h3>
+      <button class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200" onclick="closeMetricModal()">
+        <iconify-icon icon="ph:x-bold" width="18"></iconify-icon>
+      </button>
+    </div>
+    <div id="metric-modal-chart" class="h-64 w-full mb-6"></div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs">
+        <thead class="bg-gray-50 text-gray-500">
+          <tr><th class="p-2 text-left">日期</th><th class="p-2 text-right">数值</th><th class="p-2 text-right">状态</th></tr>
+        </thead>
+        <tbody id="metric-modal-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 健康档案详情模态框 -->
+<div class="fixed inset-0 z-[100] modal-overlay flex items-center justify-center p-4" id="archive-modal-overlay" onclick="closeArchiveModal()">
+  <div class="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-lg shadow-2xl" onclick="event.stopPropagation()">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xl font-bold">4月健康档案</h3>
+      <button class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200" onclick="closeArchiveModal()">
+        <iconify-icon icon="ph:x-bold" width="18"></iconify-icon>
+      </button>
+    </div>
+    <div class="space-y-4 text-sm">
+      <div class="flex justify-between"><span>生成周报数量</span><span class="font-bold">4份</span></div>
+      <div class="flex justify-between"><span>总健康评分均值</span><span class="font-bold text-green-600">94分</span></div>
+      <div class="flex justify-between"><span>异常事件</span><span class="font-bold text-orange-600">2次 (轻微)</span></div>
+      <div class="flex justify-between"><span>兽医随访建议</span><span class="font-bold">无需紧急干预</span></div>
+      <div class="mt-4 p-4 bg-orange-50 rounded-xl">
+        <p class="text-xs text-gray-600">综合评估：大黄本月状态良好，体重控制需留意，耳部清洁建议加强。已自动生成下次体检提醒。</p>
+      </div>
+      <button class="w-full py-2 bg-orange-500 text-white rounded-xl text-sm font-bold mt-4" onclick="alert('模拟下载：即将生成PDF档案。')">下载完整档案 PDF</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---------- 趋势图配置 ----------
+  const chartDom = document.getElementById('chart-trend');
+  const trendChart = echarts.init(chartDom);
+  let currentTrendMetric = 'weight';
+
+  const trendData = {
+    weight: {
+      name: '体重 (kg)',
+      yAxisIndex: 0,
+      yAxisName: '体重 (kg)',
+      min: 12,
+      max: 13,
+      color: '#F97316',
+      data: [12.2, 12.2, 12.3, 12.3, 12.4, 12.5, 12.5]
+    },
+    heartrate: {
+      name: '心率 (bpm)',
+      yAxisIndex: 1,
+      yAxisName: '心率 (bpm)',
+      min: 60,
+      max: 100,
+      color: '#EC4899',
+      data: [80, 82, 85, 78, 82, 84, 82]
+    },
+    steps: {
+      name: '步数 (千步)',
+      yAxisIndex: 0,
+      yAxisName: '步数 (千步)',
+      min: 0,
+      max: 10,
+      color: '#06B6D4',
+      data: [5.2, 6.1, 4.8, 7.3, 5.9, 8.1, 6.5]
+    }
+  };
+
+  function getTrendOption(metric) {
+    const cfg = trendData[metric];
+    return {
+      grid: { left: '5%', right: '5%', bottom: '10%', top: '15%', containLabel: true },
+      tooltip: { trigger: 'axis' },
+      legend: { data: [cfg.name], top: 0, right: 0, textStyle: { fontSize: 11 } },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: ['04-27', '04-28', '04-29', '04-30', '05-01', '05-02', '05-03'],
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: { color: '#94A3B8', fontSize: 11 }
+      },
+      yAxis: [
+        {
+          type: 'value',
+          name: cfg.yAxisName,
+          min: cfg.min,
+          max: cfg.max,
+          position: 'left',
+          offset: 0,
+          splitLine: { lineStyle: { type: 'dashed', color: '#F1F5F9' } },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          axisLabel: { color: '#94A3B8', fontSize: 11, margin: 8 },
+          nameTextStyle: { fontSize: 10, color: '#94A3B8' }
+        },
+        {
+          type: 'value',
+          name: metric === 'weight' ? '心率 (bpm)' : '',
+          position: 'right',
+          offset: 0,
+          show: metric === 'weight' ? true : false,
+          min: 60,
+          max: 100,
+          splitLine: { show: false },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          axisLabel: { color: '#94A3B8', fontSize: 11, margin: 8 },
+          nameTextStyle: { fontSize: 10, color: '#94A3B8' }
+        }
+      ],
+      series: [
+        {
+          name: cfg.name,
+          data: cfg.data,
+          type: 'line',
+          smooth: true,
+          symbol: 'circle',
+          symbolSize: 8,
+          itemStyle: { color: cfg.color },
+          lineStyle: { width: 3 },
+          yAxisIndex: cfg.yAxisIndex
+        }
+      ]
+    };
+  }
+
+  function renderTrendChart(metric) {
+    const option = getTrendOption(metric);
+    trendChart.setOption(option, true);
+  }
+
+  function switchTrend(metric, btn) {
+    currentTrendMetric = metric;
+    document.querySelectorAll('#trend-buttons button').forEach(b => {
+      b.classList.remove('bg-orange-100', 'text-orange-600');
+      b.classList.add('bg-gray-100', 'text-gray-500');
+    });
+    btn.classList.remove('bg-gray-100', 'text-gray-500');
+    btn.classList.add('bg-orange-100', 'text-orange-600');
+    renderTrendChart(metric);
+  }
+
+  renderTrendChart('weight');
+
+  window.addEventListener('resize', () => {
+    trendChart.resize();
+    if (metricChartInstance) metricChartInstance.resize();
+  });
+
+  // ---------- 症状自查 ----------
+  function updateSymptomSummary() {
+    const checked = document.querySelectorAll('#symptom-grid input:checked');
+    const placeholderText = document.getElementById('symptom-placeholder-text');
+    if (checked.length > 0) {
+      const names = Array.from(checked).map(cb => cb.nextElementSibling.textContent.trim());
+      placeholderText.textContent = `已选择 ${checked.length} 个症状：${names.join('、')}`;
+    } else {
+      placeholderText.textContent = '选择上述症状后点击下方分析按钮';
+    }
+  }
+
+  function analyzeSymptoms() {
+    const checked = document.querySelectorAll('#symptom-grid input:checked');
+    if (checked.length === 0) {
+      alert('请至少选择一个症状');
+      return;
+    }
+    const btn = document.getElementById('analyze-btn');
+    btn.innerHTML = '<iconify-icon icon="eos-icons:loading" class="animate-spin"></iconify-icon> 正在由 AI 分析中...';
+    btn.disabled = true;
+    setTimeout(() => {
+      document.getElementById('check-result-placeholder').classList.add('hidden');
+      document.getElementById('check-result').classList.remove('hidden');
+      if (document.getElementById('symp-8').checked) {
+        document.getElementById('cause-list').innerHTML = `
+          <li class="bg-white p-3 rounded-xl text-sm border border-orange-50 flex justify-between items-center">
+            <span>1. 外耳炎 / 耳痒螨 (高度契合)</span>
+            <span class="text-[10px] px-2 py-0.5 bg-red-100 text-red-500 rounded-full">高风险</span>
+          </li>
+          <li class="bg-white p-3 rounded-xl text-sm border border-orange-50 flex justify-between items-center">
+            <span>2. 过敏性皮炎 (可能)</span>
+            <span class="text-[10px] px-2 py-0.5 bg-yellow-100 text-yellow-500 rounded-full">中风险</span>
+          </li>
+        `;
+        document.getElementById('advice-text').textContent = '检测到抓挠行为与耳部异常高度关联，建议进行耳道检查并排查寄生虫。';
+        document.getElementById('urgency-level').textContent = '黄色';
+      } else {
+        document.getElementById('cause-list').innerHTML = `
+          <li class="bg-white p-3 rounded-xl text-sm border border-orange-50 flex justify-between items-center">
+            <span>1. 轻度消化不良 (可能)</span>
+            <span class="text-[10px] px-2 py-0.5 bg-yellow-100 text-yellow-500 rounded-full">中风险</span>
+          </li>
+        `;
+        document.getElementById('advice-text').textContent = '根据所选症状，建议调整饮食并观察24小时，若持续则需就医。';
+        document.getElementById('urgency-level').textContent = '绿色';
+      }
+      btn.innerHTML = '开始智能分析';
+      btn.disabled = false;
+      document.getElementById('symptom-checker').scrollIntoView({behavior:'smooth'});
+    }, 1500);
+  }
+
+  function resetSymptomCheck() {
+    document.getElementById('check-result-placeholder').classList.remove('hidden');
+    document.getElementById('check-result').classList.add('hidden');
+    document.querySelectorAll('#symptom-grid input').forEach(cb => cb.checked = false);
+    document.getElementById('symptom-placeholder-text').textContent = '选择上述症状后点击下方分析按钮';
+  }
+
+  // ---------- 指标详情模态框 ----------
+  let metricChartInstance = null;
+  const metricModalChartDom = document.getElementById('metric-modal-chart');
+
+  const metricDetails = {
+    temperature: {
+      title: '体温趋势',
+      unit: '℃',
+      data: [38.5, 38.6, 38.4, 38.7, 38.6, 38.5, 38.6],
+      dates: ['04-27','04-28','04-29','04-30','05-01','05-02','05-03'],
+      statuses: ['正常','正常','正常','正常','正常','正常','正常'],
+      color: '#EF4444'
+    },
+    weight: {
+      title: '体重趋势',
+      unit: 'kg',
+      data: [12.2, 12.2, 12.3, 12.3, 12.4, 12.5, 12.5],
+      dates: ['04-27','04-28','04-29','04-30','05-01','05-02','05-03'],
+      statuses: ['正常','正常','正常','正常','偏重','偏重','偏重'],
+      color: '#3B82F6'
+    },
+    heartrate: {
+      title: '心率趋势',
+      unit: 'bpm',
+      data: [80, 82, 85, 78, 82, 84, 82],
+      dates: ['04-27','04-28','04-29','04-30','05-01','05-02','05-03'],
+      statuses: ['平稳','平稳','正常','平稳','平稳','正常','平稳'],
+      color: '#EC4899'
+    },
+    water: {
+      title: '饮水量趋势',
+      unit: 'ml',
+      data: [420, 450, 380, 500, 470, 430, 450],
+      dates: ['04-27','04-28','04-29','04-30','05-01','05-02','05-03'],
+      statuses: ['充足','充足','正常','充足','充足','充足','充足'],
+      color: '#06B6D4'
+    }
+  };
+
+  function openMetricDetail(type) {
+    const detail = metricDetails[type];
+    if (!detail) return;
+    document.getElementById('metric-modal-title').textContent = detail.title;
+    const tbody = document.getElementById('metric-modal-table-body');
+    tbody.innerHTML = detail.dates.map((date, i) => `
+      <tr class="border-b border-gray-50">
+        <td class="p-2">${date}</td>
+        <td class="p-2 text-right font-bold">${detail.data[i]} ${detail.unit}</td>
+        <td class="p-2 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] ${detail.statuses[i]==='正常'||detail.statuses[i]==='平稳'||detail.statuses[i]==='充足' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'}">${detail.statuses[i]}</span></td>
+      </tr>
+    `).join('');
+
+    if (metricChartInstance) metricChartInstance.dispose();
+    metricChartInstance = echarts.init(metricModalChartDom);
+    metricChartInstance.setOption({
+      grid: { left: '8%', right: '5%', top: 15, bottom: 10 },
+      xAxis: {
+        data: detail.dates,
+        axisLabel: { fontSize: 10 }
+      },
+      yAxis: {
+        name: detail.unit,
+        nameTextStyle: { fontSize: 10 }
+      },
+      series: [{
+        data: detail.data,
+        type: 'line',
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        itemStyle: { color: detail.color },
+        lineStyle: { width: 2.5 }
+      }]
+    });
+
+    document.getElementById('metric-modal-overlay').classList.add('active');
+    setTimeout(() => metricChartInstance.resize(), 100);
+  }
+
+  function closeMetricModal() {
+    document.getElementById('metric-modal-overlay').classList.remove('active');
+    if (metricChartInstance) {
+      metricChartInstance.dispose();
+      metricChartInstance = null;
+    }
+  }
+
+  function openArchiveDetail() {
+    document.getElementById('archive-modal-overlay').classList.add('active');
+  }
+  function closeArchiveModal() {
+    document.getElementById('archive-modal-overlay').classList.remove('active');
+  }
+
+  function refreshAdvice() {
+    const advices = [
+      '大黄今日状态良好，可适当增加10分钟游戏互动。',
+      '检测到气温升高，建议开启空调并保持通风。',
+      '今日喂食量可略微减少，零食暂停一次。',
+      '建议傍晚散步20分钟，避免高温时段。'
+    ];
+    document.getElementById('ai-advice-text').textContent = advices[Math.floor(Math.random() * advices.length)];
+  }
+
+  // ---------- 粪便AI跳转 ----------
+  function handleFecesClick() {
+    window.location.href = 'feces-ai.html';
+  }
+
+  // 键盘ESC关闭模态框
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeMetricModal();
+      closeArchiveModal();
+    }
+  });
+</script>
+</body>
+</html>

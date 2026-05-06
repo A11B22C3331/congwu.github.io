@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>宠友圈 - 宠物健康助手</title>
+    <script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js">
+    </script>
+    <script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js">
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #FFF9F5;
+            color: #333;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .card-shadow {
+            box-shadow: 0 10px 25px -5px rgba(255, 141, 108, 0.1), 0 8px 10px -6px rgba(255, 141, 108, 0.1);
+        }
+
+        .nav-link:hover {
+            color: #FF8D6C;
+        }
+
+        .nav-active {
+            color: #FF8D6C;
+            font-weight: 700;
+            border-bottom: 2px solid #FF8D6C;
+        }
+
+        .file-tag {
+            animation: slideIn 0.25s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-overlay {
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .modal-panel {
+            animation: scaleIn 0.25s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #fcd5c9;
+            border-radius: 8px;
+        }
+
+        .post-image-clickable {
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .post-image-clickable:hover {
+            opacity: 0.85;
+        }
+
+        .toast {
+            animation: toastIn 0.3s ease-out, toastOut 0.3s ease-in 2.5s forwards;
+            z-index: 9999;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-20px); }
+        }
+
+        .post-fade-in {
+            animation: postFadeIn 0.4s ease-out;
+        }
+        @keyframes postFadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <div id="toast-container" class="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2 pointer-events-none"></div>
+
+    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-orange-50 px-4 md:px-8 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-200">
+                    <iconify-icon icon="ph:paw-print-fill" width="24"></iconify-icon>
+                </div>
+                <span class="text-xl font-bold bg-gradient-to-r from-orange-600 to-orange-400 bg-clip-text text-transparent hidden sm:block">PetMind</span>
+            </div>
+            <nav class="hidden md:flex items-center gap-8">
+                <a class="nav-link py-1" href="index.html">首页</a>
+                <a class="nav-link py-1" href="behavior.html">行为感知</a>
+                <a class="nav-link py-1" href="health.html">健康管家</a>
+                <a class="nav-link nav-active py-1" href="social.html">宠友圈</a>
+                <a class="nav-link py-1" href="personal.html">我的</a>
+            </nav>
+            <div class="flex items-center gap-4">
+                <span class="text-xs text-gray-400 hidden lg:block">2026年05月04日</span>
+                <button class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 md:hidden" onclick="toggleMobileMenu()">
+                    <iconify-icon icon="ph:list-bold" width="24"></iconify-icon>
+                </button>
+                <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 overflow-hidden border-2 border-orange-200">
+                    <img alt="User Avatar" class="w-full h-full object-cover" src="https://modao.cc/agent-py/media/generated_images/2026-05-03/7317a86f439f41ea80cacd25057b2cf4.jpg#desc=User%20Avatar" />
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 md:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="lg:col-span-8 space-y-8" id="feed-container">
+                <!-- 发布动态 -->
+                <div class="bg-white rounded-[24px] p-6 card-shadow border border-orange-50" id="publish-card">
+                    <div class="flex gap-4">
+                        <img alt="User" class="w-12 h-12 rounded-full border-2 border-orange-100" src="https://modao.cc/agent-py/media/generated_images/2026-05-03/3fd7407a841e46feb991081b12c29107.jpg#desc=User" />
+                        <div class="flex-1">
+                            <textarea class="w-full bg-gray-50 rounded-2xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 border-none resize-none" id="publish-textarea" placeholder="记录大黄的有趣瞬间..." rows="3"></textarea>
+                            <div id="file-preview-area" class="flex flex-wrap gap-2 mt-3 hidden"></div>
+                            <div id="location-tag-area" class="mt-3 hidden">
+                                <div class="inline-flex items-center gap-2 bg-orange-50 text-orange-600 px-3 py-1.5 rounded-full text-xs font-medium file-tag">
+                                    <iconify-icon icon="ph:map-pin-fill" width="16"></iconify-icon>
+                                    <span id="location-tag-text">已选位置</span>
+                                    <button onclick="clearLocation()" class="text-orange-400 hover:text-orange-600 ml-1">
+                                        <iconify-icon icon="ph:x-circle-fill" width="16"></iconify-icon>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center mt-4">
+                                <div class="flex gap-4">
+                                    <button class="flex items-center gap-2 text-gray-400 hover:text-orange-500 transition-colors" onclick="document.getElementById('image-input').click()" type="button">
+                                        <iconify-icon icon="ph:image-bold" width="20"></iconify-icon>
+                                        <span class="text-xs">图片</span>
+                                    </button>
+                                    <button class="flex items-center gap-2 text-gray-400 hover:text-orange-500 transition-colors" onclick="document.getElementById('video-input').click()" type="button">
+                                        <iconify-icon icon="ph:video-camera-bold" width="20"></iconify-icon>
+                                        <span class="text-xs">视频</span>
+                                    </button>
+                                    <button class="flex items-center gap-2 text-gray-400 hover:text-orange-500 transition-colors" onclick="openMapModal()" type="button">
+                                        <iconify-icon icon="ph:map-pin-bold" width="20"></iconify-icon>
+                                        <span class="text-xs">地点</span>
+                                    </button>
+                                </div>
+                                <button class="px-6 py-2 bg-orange-500 text-white rounded-full text-sm font-bold shadow-lg shadow-orange-100 hover:bg-orange-600 transition-colors" id="publish-btn" onclick="handlePublish()">发布</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="file" id="image-input" accept="image/*" multiple style="display:none" onchange="handleFileSelect(event, 'image')" />
+                <input type="file" id="video-input" accept="video/*" style="display:none" onchange="handleFileSelect(event, 'video')" />
+
+                <!-- 动态1：可乐妈 -->
+                <div class="bg-white rounded-[24px] p-6 card-shadow border border-orange-50 space-y-4">
+                    <div class="flex justify-between items-start">
+                        <div class="flex gap-4">
+                            <img alt="User" class="w-12 h-12 rounded-full object-cover" src="https://modao.cc/agent-py/media/generated_images/2026-05-03/3fd7407a841e46feb991081b12c29107.jpg#desc=User" />
+                            <div>
+                                <h4 class="font-bold text-gray-800">可乐妈</h4>
+                                <p class="text-[10px] text-gray-400">1小时前 · 来自 杭州</p>
+                            </div>
+                        </div>
+                        <button class="text-gray-400"><iconify-icon icon="ph:dots-three-outline-vertical-fill"></iconify-icon></button>
+                    </div>
+                    <p class="text-sm text-gray-700 leading-relaxed">
+                        今天可乐的健康报告出炉啦，由于最近增加了早起跑，评分直接涨到了 96！大家都带毛孩子去哪里运动呀？🐾
+                    </p>
+                    <div class="grid grid-cols-2 gap-2 rounded-2xl overflow-hidden">
+                        <img alt="Post Image" class="w-full aspect-video object-cover post-image-clickable" src="123.png" onclick="openImageViewer(this.src)" title="点击查看大图" />
+                        <img alt="Post Image" class="w-full aspect-video object-cover post-image-clickable" src="1234.png" onclick="openImageViewer(this.src)" title="点击查看大图" />
+                    </div>
+                    <div class="flex gap-6 pt-2">
+                        <button class="flex items-center gap-2 text-gray-400 hover:text-red-500 transition-colors" onclick="this.classList.toggle('text-red-500'); this.querySelector('iconify-icon').setAttribute('icon', this.classList.contains('text-red-500') ? 'ph:heart-fill' : 'ph:heart-bold')">
+                            <iconify-icon icon="ph:heart-bold" width="20"></iconify-icon>
+                            <span class="text-xs">128</span>
+                        </button>
+                        <button class="flex items-center gap-2 text-gray-400 hover:text-blue-500 transition-colors">
+                            <iconify-icon icon="ph:chat-circle-bold" width="20"></iconify-icon>
+                            <span class="text-xs">42</span>
+                        </button>
+                        <button class="flex items-center gap-2 text-gray-400 hover:text-orange-500 transition-colors" onclick="sharePost('可乐妈')">
+                            <iconify-icon icon="ph:share-network-bold" width="20"></iconify-icon>
+                            <span class="text-xs">分享</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 动态2：官方科普 -->
+                <div class="bg-white rounded-[24px] p-6 card-shadow border border-orange-50 space-y-4">
+                    <div class="flex justify-between items-start">
+                        <div class="flex gap-4">
+                            <img alt="User" class="w-12 h-12 rounded-full object-cover" src="https://modao.cc/agent-py/media/generated_images/2026-05-03/3fd7407a841e46feb991081b12c29107.jpg#desc=User" />
+                            <div>
+                                <h4 class="font-bold text-gray-800">PetMind 官方建议</h4>
+                                <p class="text-[10px] text-orange-500 font-bold">推荐动态 · 3小时前</p>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-700 leading-relaxed">
+                        【科普】春季是过敏高发期，如果发现毛孩子频繁舔舐脚蹼或耳朵红肿，请注意排除环境中的花粉过敏原...
+                    </p>
+                    <div class="rounded-2xl overflow-hidden">
+                        <img alt="Official Post" class="w-full h-48 object-cover post-image-clickable" src="12345.png" onclick="openImageViewer(this.src)" title="点击查看大图" />
+                    </div>
+                    <a class="block text-center py-2 text-xs font-bold text-orange-500 bg-orange-50 rounded-xl" href="wiki.html">查看完整科普指南</a>
+                </div>
+
+                <!-- 动态3：元宝爸 游泳视频 -->
+                <div class="bg-white rounded-[24px] p-6 card-shadow border border-orange-50 space-y-4 post-fade-in">
+                    <div class="flex justify-between items-start">
+                        <div class="flex gap-4">
+                            <img alt="User" class="w-12 h-12 rounded-full object-cover" src="https://modao.cc/agent-py/media/generated_images/2026-05-03/7317a86f439f41ea80cacd25057b2cf4.jpg#desc=User" />
+                            <div>
+                                <h4 class="font-bold text-gray-800">元宝爸</h4>
+                                <p class="text-[10px] text-gray-400">2小时前 · 来自 北京</p>
+                            </div>
+                        </div>
+                        <button class="text-gray-400"><iconify-icon icon="ph:dots-three-outline-vertical-fill"></iconify-icon></button>
+                    </div>
+                    <p class="text-sm text-gray-700 leading-relaxed">
+                        元宝第一次游泳🏊‍♂️！虽然穿上救生衣的样子有点呆，但很快就适应了，以后每周都要带它来巩固一下～
+                    </p>
+                    <div class="rounded-2xl overflow-hidden bg-black">
+                        <video class="w-full max-h-64 object-contain post-image-clickable" 
+                               src="https://modao.cc/agent-py/media/generated_images/2026-05-03/dog_swim_sample.mp4" 
+                               controls preload="metadata" 
+                               poster="123456.png"
+                               onclick="window.open(this.src, '_blank')" title="点击在新标签页查看视频">
+                        </video>
+                    </div>
+                    <div class="flex gap-6 pt-2">
+                        <button class="flex items-center gap-2 text-gray-400 hover:text-red-500 transition-colors" onclick="this.classList.toggle('text-red-500'); this.querySelector('iconify-icon').setAttribute('icon', this.classList.contains('text-red-500') ? 'ph:heart-fill' : 'ph:heart-bold')">
+                            <iconify-icon icon="ph:heart-bold" width="20"></iconify-icon>
+                            <span class="text-xs">89</span>
+                        </button>
+                        <button class="flex items-center gap-2 text-gray-400 hover:text-blue-500 transition-colors">
+                            <iconify-icon icon="ph:chat-circle-bold" width="20"></iconify-icon>
+                            <span class="text-xs">27</span>
+                        </button>
+                        <button class="flex items-center gap-2 text-gray-400 hover:text-orange-500 transition-colors" onclick="sharePost('元宝爸')">
+                            <iconify-icon icon="ph:share-network-bold" width="20"></iconify-icon>
+                            <span class="text-xs">分享</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 动态4：喵小咪 多猫轰趴 -->
+                <div class="bg-white rounded-[24px] p-6 card-shadow border border-orange-50 space-y-4 post-fade-in">
+                    <div class="flex justify-between items-start">
+                        <div class="flex gap-4">
+                            <img alt="User" class="w-12 h-12 rounded-full object-cover" src="https://modao.cc/agent-py/media/generated_images/2026-05-03/3fd7407a841e46feb991081b12c29107.jpg#desc=User" />
+                            <div>
+                                <h4 class="font-bold text-gray-800">喵小咪</h4>
+                                <p class="text-[10px] text-gray-400">4小时前 · 来自 成都</p>
+                            </div>
+                        </div>
+                        <button class="text-gray-400"><iconify-icon icon="ph:dots-three-outline-vertical-fill"></iconify-icon></button>
+                    </div>
+                    <p class="text-sm text-gray-700 leading-relaxed">
+                        家里四只猫的周末轰趴🥳 新买的猫爬架终于组装好了，主子们全都冲上去抢地盘，只有布丁淡定地在沙发上看戏～
+                        <span class="text-orange-500">#多猫家庭</span>
+                    </p>
+                    <div class="grid grid-cols-3 gap-2 rounded-2xl overflow-hidden">
+                        <img alt="猫咪聚会" class="w-full aspect-square object-cover post-image-clickable" src="1.png" onclick="openImageViewer(this.src)" title="点击查看大图" />
+                        <img alt="猫咪聚会" class="w-full aspect-square object-cover post-image-clickable" src="2.png" onclick="openImageViewer(this.src)" title="点击查看大图" />
+                        <img alt="猫咪聚会" class="w-full aspect-square object-cover post-image-clickable" src="3.png" onclick="openImageViewer(this.src)" title="点击查看大图" />
+                        <img alt="猫咪聚会" class="w-full aspect-square object-cover post-image-clickable" src="4.png" onclick="openImageViewer(this.src)" title="点击查看大图" />
+                        <img alt="猫咪聚会" class="w-full aspect-square object-cover post-image-clickable" src="5.png" onclick="openImageViewer(this.src)" title="点击查看大图" />
+                        <img alt="猫咪聚会" class="w-full aspect-square object-cover post-image-clickable" src="6.png" onclick="openImageViewer(this.src)" title="点击查看大图" />
+                    </div>
+                    <div class="flex gap-6 pt-2">
+                        <button class="flex items-center gap-2 text-gray-400 hover:text-red-500 transition-colors" onclick="this.classList.toggle('text-red-500'); this.querySelector('iconify-icon').setAttribute('icon', this.classList.contains('text-red-500') ? 'ph:heart-fill' : 'ph:heart-bold')">
+                            <iconify-icon icon="ph:heart-bold" width="20"></iconify-icon>
+                            <span class="text-xs">213</span>
+                        </button>
+                        <button class="flex items-center gap-2 text-gray-400 hover:text-blue-500 transition-colors">
+                            <iconify-icon icon="ph:chat-circle-bold" width="20"></iconify-icon>
+                            <span class="text-xs">58</span>
+                        </button>
+                        <button class="flex items-center gap-2 text-gray-400 hover:text-orange-500 transition-colors" onclick="sharePost('喵小咪')">
+                            <iconify-icon icon="ph:share-network-bold" width="20"></iconify-icon>
+                            <span class="text-xs">分享</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：推荐宠友与话题 -->
+            <div class="lg:col-span-4 space-y-8">
+                <div class="bg-white rounded-[24px] p-6 card-shadow border border-orange-50">
+                    <h3 class="font-bold text-gray-800 mb-6">热门话题</h3>
+                    <div class="space-y-4">
+                        <!-- 修改后的微博链接 -->
+                        <a class="flex items-center justify-between group" href="https://s.weibo.com/weibo?q=%23狗狗也爱看电视%23" target="_blank" rel="noopener">
+                            <div class="flex items-center gap-3">
+                                <span class="text-orange-500 font-bold">#</span>
+                                <span class="text-sm text-gray-700 group-hover:text-orange-500 transition-colors">狗狗也爱看电视</span>
+                            </div>
+                            <span class="text-[10px] text-gray-400">2.4w 讨论</span>
+                        </a>
+                        <a class="flex items-center justify-between group" href="https://s.weibo.com/weibo?q=%23春天遛狗打卡%23" target="_blank" rel="noopener">
+                            <div class="flex items-center gap-3">
+                                <span class="text-orange-500 font-bold">#</span>
+                                <span class="text-sm text-gray-700 group-hover:text-orange-500 transition-colors">春天遛狗打卡</span>
+                            </div>
+                            <span class="text-[10px] text-gray-400">1.8w 讨论</span>
+                        </a>
+                        <a class="flex items-center justify-between group" href="https://s.weibo.com/weibo?q=%23自制宠物零食%23" target="_blank" rel="noopener">
+                            <div class="flex items-center gap-3">
+                                <span class="text-orange-500 font-bold">#</span>
+                                <span class="text-sm text-gray-700 group-hover:text-orange-500 transition-colors">自制宠物零食</span>
+                            </div>
+                            <span class="text-[10px] text-gray-400">9.5k 讨论</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-[24px] p-6 card-shadow border border-orange-50">
+                    <h3 class="font-bold text-gray-800 mb-6">推荐宠友</h3>
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <img alt="User" class="w-10 h-10 rounded-full" src="https://modao.cc/agent-py/media/generated_images/2026-05-03/3fd7407a841e46feb991081b12c29107.jpg#desc=User" />
+                                <div>
+                                    <h4 class="text-xs font-bold">球球爸</h4>
+                                    <p class="text-[10px] text-gray-400">同城 · 柯基家长</p>
+                                </div>
+                            </div>
+                            <button class="px-4 py-1.5 bg-orange-500 text-white text-[10px] font-bold rounded-full hover:bg-orange-600 transition-colors" onclick="this.textContent = this.textContent === '关注' ? '已关注' : '关注'; this.classList.toggle('bg-orange-500'); this.classList.toggle('bg-gray-300'); showToast(this.textContent === '已关注' ? '已关注球球爸 🎉' : '已取消关注')">关注</button>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <img alt="User" class="w-10 h-10 rounded-full" src="https://modao.cc/agent-py/media/generated_images/2026-05-03/7317a86f439f41ea80cacd25057b2cf4.jpg#desc=User" />
+                                <div>
+                                    <h4 class="text-xs font-bold">布丁小姐</h4>
+                                    <p class="text-[10px] text-gray-400">3km以内 · 布偶猫</p>
+                                </div>
+                            </div>
+                            <button class="px-4 py-1.5 bg-orange-500 text-white text-[10px] font-bold rounded-full hover:bg-orange-600 transition-colors" onclick="this.textContent = this.textContent === '关注' ? '已关注' : '关注'; this.classList.toggle('bg-orange-500'); this.classList.toggle('bg-gray-300'); showToast(this.textContent === '已关注' ? '已关注布丁小姐 🎉' : '已取消关注')">关注</button>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <img alt="User" class="w-10 h-10 rounded-full" src="https://modao.cc/agent-py/media/generated_images/2026-05-03/3fd7407a841e46feb991081b12c29107.jpg#desc=User" />
+                                <div>
+                                    <h4 class="text-xs font-bold">哈士葵</h4>
+                                    <p class="text-[10px] text-gray-400">新晋宠主 · 哈士奇</p>
+                                </div>
+                            </div>
+                            <button class="px-4 py-1.5 bg-orange-500 text-white text-[10px] font-bold rounded-full hover:bg-orange-600 transition-colors" onclick="this.textContent = this.textContent === '关注' ? '已关注' : '关注'; this.classList.toggle('bg-orange-500'); this.classList.toggle('bg-gray-300'); showToast(this.textContent === '已关注' ? '已关注哈士葵 🎉' : '已取消关注')">关注</button>
+                        </div>
+                    </div>
+                    <button class="w-full mt-6 text-xs text-gray-400 hover:text-orange-500 transition-colors" onclick="showToast('加载更多推荐宠友...')">查看更多推荐</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 高德地图模态框（原代码不变） -->
+    <div id="map-modal-overlay" class="fixed inset-0 z-[100] modal-overlay hidden flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onclick="closeMapModalOutside(event)">
+        <div class="bg-white rounded-[24px] w-full max-w-2xl max-h-[90vh] flex flex-col modal-panel shadow-2xl" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <h3 class="font-bold text-gray-800 text-lg flex items-center gap-2">
+                    <iconify-icon icon="ph:map-pin-fill" width="22" class="text-orange-500"></iconify-icon>
+                    选择位置 · 高德地图
+                </h3>
+                <button onclick="closeMapModal()" class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors">
+                    <iconify-icon icon="ph:x-bold" width="18"></iconify-icon>
+                </button>
+            </div>
+            <div class="flex-1 relative min-h-[350px]">
+                <div id="amap-container" class="w-full h-full min-h-[350px] bg-gray-100 flex items-center justify-center text-gray-400">
+                    <div class="text-center" id="map-loading">
+                        <iconify-icon icon="ph:map-pin-bold" width="48" class="text-orange-300 mx-auto mb-2"></iconify-icon>
+                        <p class="text-sm">正在加载高德地图...</p>
+                        <p class="text-xs text-gray-300 mt-1">如加载失败请检查网络或API Key</p>
+                    </div>
+                </div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-10" id="map-center-marker" style="display:none;">
+                    <iconify-icon icon="ph:map-pin-fill" width="36" class="text-red-500 drop-shadow-lg"></iconify-icon>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 space-y-3">
+                <div class="flex gap-2">
+                    <input type="text" id="map-search-input" class="flex-1 bg-gray-50 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 border-none" placeholder="搜索地点名称..." onkeydown="if(event.key==='Enter')searchMapLocation()" />
+                    <button onclick="searchMapLocation()" class="px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-colors flex items-center gap-1">
+                        <iconify-icon icon="ph:magnifying-glass-bold" width="16"></iconify-icon>
+                        搜索
+                    </button>
+                </div>
+                <div id="selected-location-info" class="text-xs text-gray-500 text-center">点击地图选点，或使用搜索功能</div>
+                <div class="flex gap-3">
+                    <button onclick="getCurrentLocation()" class="flex-1 py-2.5 border border-orange-300 text-orange-500 rounded-xl text-sm font-bold hover:bg-orange-50 transition-colors flex items-center justify-center gap-1">
+                        <iconify-icon icon="ph:crosshair-bold" width="16"></iconify-icon>
+                        定位当前位置
+                    </button>
+                    <button onclick="confirmLocation()" class="flex-1 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-colors flex items-center justify-center gap-1" id="confirm-location-btn">
+                        <iconify-icon icon="ph:check-circle-bold" width="16"></iconify-icon>
+                        确认位置
+                    </button>
+                </div>
+                <a href="https://www.amap.com/" target="_blank" rel="noopener" class="block text-center text-xs text-gray-400 hover:text-orange-500 transition-colors">
+                    在高德地图网页版中查看 →
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 移动端底部导航 -->
+    <div class="md:hidden fixed bottom-0 left-0 right-0 h-[84px] bg-white/80 backdrop-blur-xl border-t border-orange-50 px-2 flex justify-between items-center pb-6 z-50">
+        <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="index.html">
+            <iconify-icon icon="ph:house-bold" width="22"></iconify-icon>
+            <span class="text-[9px] font-bold">首页</span>
+        </a>
+        <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="behavior.html">
+            <iconify-icon icon="ph:dog-bold" width="22"></iconify-icon>
+            <span class="text-[9px] font-bold">行为感知</span>
+        </a>
+        <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="health.html">
+            <iconify-icon icon="ph:heartbeat-bold" width="22"></iconify-icon>
+            <span class="text-[9px] font-bold">健康管家</span>
+        </a>
+        <a class="flex flex-col items-center gap-1 text-orange-500 flex-1" href="social.html">
+            <iconify-icon icon="ph:users-three-fill" width="22"></iconify-icon>
+            <span class="text-[9px] font-bold">宠友圈</span>
+        </a>
+        <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="personal.html">
+            <iconify-icon icon="ph:user-circle-bold" width="22"></iconify-icon>
+            <span class="text-[9px] font-bold">我的</span>
+        </a>
+    </div>
+
+    <script>
+        // ==================== 全局状态 ====================
+        let selectedFiles = { images: [], videos: [] };
+        let selectedLocation = null;
+        let amapInstance = null;
+        let amapMarker = null;
+        let currentMapCenter = null;
+
+        const AMAP_KEY = 'your_amap_key_here'; // 请替换为您的高德Key
+        const AMAP_SECURITY_CODE = '';
+
+        // Toast
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-gray-700';
+            toast.className = `toast ${bgColor} text-white px-5 py-3 rounded-2xl text-sm font-medium shadow-lg flex items-center gap-2 pointer-events-auto`;
+            toast.innerHTML = `<iconify-icon icon="${type === 'success' ? 'ph:check-circle-bold' : type === 'error' ? 'ph:warning-circle-bold' : 'ph:info-bold'}" width="18"></iconify-icon> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 3000);
+        }
+
+        // 文件处理
+        function handleFileSelect(event, type) {
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
+            if (type === 'image') {
+                const remaining = 9 - selectedFiles.images.length;
+                const toAdd = files.slice(0, remaining);
+                selectedFiles.images = [...selectedFiles.images, ...toAdd];
+                if (files.length > remaining) showToast(`最多选择9张图片，已选${selectedFiles.images.length}张`, 'error');
+            } else if (type === 'video') {
+                if (selectedFiles.videos.length >= 1) {
+                    showToast('最多选择1个视频', 'error');
+                } else {
+                    selectedFiles.videos = [files[0]];
+                }
+                if (files.length > 1 && selectedFiles.videos.length === 0) {
+                    selectedFiles.videos = [files[0]];
+                    showToast('最多选择1个视频，已保留第一个', 'error');
+                }
+            }
+            updateFilePreview();
+            event.target.value = '';
+        }
+
+        function updateFilePreview() {
+            const previewArea = document.getElementById('file-preview-area');
+            previewArea.innerHTML = '';
+            const allPreviews = [];
+            selectedFiles.images.forEach((file, i) => allPreviews.push({ url: URL.createObjectURL(file), name: file.name, type: 'image', index: i }));
+            selectedFiles.videos.forEach((file, i) => allPreviews.push({ url: null, name: file.name, type: 'video', index: i }));
+            if (allPreviews.length === 0) { previewArea.classList.add('hidden'); return; }
+            previewArea.classList.remove('hidden');
+            allPreviews.forEach(item => {
+                const tag = document.createElement('div');
+                tag.className = 'file-tag relative inline-flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs group';
+                if (item.type === 'image') {
+                    tag.innerHTML = `<img src="${item.url}" class="w-8 h-8 rounded-lg object-cover" alt="预览"/><span class="text-gray-600 max-w-[80px] truncate">${item.name}</span><button class="text-gray-400 hover:text-red-500 ml-1" onclick="removeFile('image',${item.index})"><iconify-icon icon="ph:x-circle-fill" width="16"></iconify-icon></button>`;
+                } else {
+                    tag.innerHTML = `<div class="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center text-gray-500"><iconify-icon icon="ph:video-bold" width="16"></iconify-icon></div><span class="text-gray-600 max-w-[80px] truncate">${item.name}</span><button class="text-gray-400 hover:text-red-500 ml-1" onclick="removeFile('video',${item.index})"><iconify-icon icon="ph:x-circle-fill" width="16"></iconify-icon></button>`;
+                }
+                previewArea.appendChild(tag);
+            });
+        }
+
+        function removeFile(type, index) {
+            if (type === 'image') selectedFiles.images.splice(index, 1);
+            else selectedFiles.videos.splice(index, 1);
+            updateFilePreview();
+        }
+
+        // 地图模态框
+        function openMapModal() {
+            document.getElementById('map-modal-overlay').classList.remove('hidden');
+            document.getElementById('map-modal-overlay').classList.add('flex');
+            document.body.style.overflow = 'hidden';
+            setTimeout(initAMap, 300);
+        }
+        function closeMapModal() {
+            document.getElementById('map-modal-overlay').classList.add('hidden');
+            document.getElementById('map-modal-overlay').classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+        function closeMapModalOutside(e) { if (e.target === e.currentTarget) closeMapModal(); }
+
+        function initAMap() {
+            const container = document.getElementById('amap-container');
+            const mapLoading = document.getElementById('map-loading');
+            if (amapInstance && container.querySelector('#amap-inner')) return;
+            if (typeof AMap !== 'undefined') { buildMap(); return; }
+            mapLoading.innerHTML = `<iconify-icon icon="ph:spinner-bold" width="48" class="text-orange-300 mx-auto mb-2 animate-spin"></iconify-icon><p class="text-sm">正在加载高德地图...</p>`;
+            const sec = AMAP_SECURITY_CODE ? `window._AMapSecurityConfig={securityJsCode:'${AMAP_SECURITY_CODE}'};` : '';
+            const script = document.createElement('script');
+            const key = AMAP_KEY !== 'your_amap_key_here' ? AMAP_KEY : '';
+            script.src = key ? `https://webapi.amap.com/maps?v=2.0&key=${key}&callback=onAMapLoaded` : `https://webapi.amap.com/maps?v=2.0&key=demo_key&callback=onAMapLoaded`;
+            if (sec) { const s = document.createElement('script'); s.textContent = sec; document.head.appendChild(s); }
+            window.onAMapLoaded = buildMap;
+            script.onerror = () => {
+                mapLoading.innerHTML = `<iconify-icon icon="ph:warning-circle-bold" width="48" class="text-red-300 mx-auto mb-2"></iconify-icon><p class="text-sm text-red-400">高德地图加载失败</p><p class="text-xs text-gray-400 mt-2">请检查API Key配置或网络连接</p><button onclick="openAmapWeb()" class="mt-3 px-4 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold">打开高德地图网页版选点</button>`;
+            };
+            document.head.appendChild(script);
+        }
+
+        function buildMap() {
+            const container = document.getElementById('amap-container');
+            const mapLoading = document.getElementById('map-loading');
+            const centerMarker = document.getElementById('map-center-marker');
+            container.innerHTML = ''; container.style.position = 'relative';
+            const div = document.createElement('div'); div.id = 'amap-inner'; div.style.cssText = 'width:100%;height:100%;min-height:350px;';
+            container.appendChild(div);
+            const defaultCenter = [120.155, 30.274];
+            currentMapCenter = { lng: defaultCenter[0], lat: defaultCenter[1] };
+            try {
+                amapInstance = new AMap.Map('amap-inner', { center: defaultCenter, zoom: 14, resizeEnable: true });
+                amapMarker = new AMap.Marker({
+                    position: defaultCenter, map: amapInstance, draggable: true,
+                    icon: new AMap.Icon({ size: new AMap.Size(32,42), image: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_r.png', imageSize: new AMap.Size(32,42) })
+                });
+                centerMarker.style.display = 'block';
+                amapInstance.on('click', e => {
+                    const pos = [e.lnglat.getLng(), e.lnglat.getLat()];
+                    amapMarker.setPosition(pos); currentMapCenter = { lng: pos[0], lat: pos[1] }; reverseGeocode(pos[0], pos[1]);
+                });
+                amapMarker.on('dragend', e => {
+                    const pos = [e.lnglat.getLng(), e.lnglat.getLat()];
+                    currentMapCenter = { lng: pos[0], lat: pos[1] }; reverseGeocode(pos[0], pos[1]);
+                });
+                reverseGeocode(defaultCenter[0], defaultCenter[1]);
+                mapLoading.style.display = 'none';
+                showToast('高德地图已加载，点击地图即可选点 🗺️');
+            } catch (err) {
+                container.innerHTML = `<div class="text-center p-8"><iconify-icon icon="ph:warning-circle-bold" width="48" class="text-red-300 mx-auto mb-2"></iconify-icon><p class="text-sm text-red-400">地图初始化失败</p><p class="text-xs text-gray-400 mt-2">${err.message}</p><button onclick="openAmapWeb()" class="mt-3 px-4 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold">打开高德地图网页版选点</button></div>`;
+            }
+        }
+
+        function reverseGeocode(lng, lat) {
+            const info = document.getElementById('selected-location-info');
+            if (typeof AMap !== 'undefined' && AMap.Geocoder) {
+                new AMap.Geocoder().getAddress([lng, lat], (status, result) => {
+                    if (status === 'complete' && result.regeocode) {
+                        const addr = result.regeocode.formattedAddress || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                        info.textContent = `📍 ${addr}`; currentMapCenter.address = addr;
+                    } else {
+                        info.textContent = `📍 坐标: ${lat.toFixed(4)}, ${lng.toFixed(4)}`; currentMapCenter.address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                    }
+                });
+            } else {
+                info.textContent = `📍 坐标: ${lat.toFixed(4)}, ${lng.toFixed(4)}`; currentMapCenter.address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            }
+        }
+
+        function searchMapLocation() {
+            const q = document.getElementById('map-search-input').value.trim();
+            if (!q) { showToast('请输入搜索关键词', 'error'); return; }
+            if (!amapInstance && typeof AMap === 'undefined') { showToast('地图尚未加载完成', 'error'); return; }
+            if (typeof AMap !== 'undefined' && AMap.PlaceSearch) {
+                new AMap.PlaceSearch({ map: amapInstance }).search(q, (status, result) => {
+                    if (status === 'complete' && result.poiList?.pois.length > 0) {
+                        const poi = result.poiList.pois[0];
+                        const pos = [poi.location.getLng(), poi.location.getLat()];
+                        amapInstance.setCenter(pos); amapMarker.setPosition(pos);
+                        currentMapCenter = { lng: pos[0], lat: pos[1], address: poi.name };
+                        document.getElementById('selected-location-info').textContent = `📍 ${poi.name} - ${poi.address || ''}`;
+                        showToast(`已定位到：${poi.name}`);
+                    } else showToast('未找到该地点', 'error');
+                });
+            } else showToast('搜索功能暂不可用', 'error');
+        }
+
+        function getCurrentLocation() {
+            if (!navigator.geolocation) { showToast('浏览器不支持定位', 'error'); return; }
+            showToast('正在获取当前位置...');
+            navigator.geolocation.getCurrentPosition(pos => {
+                const { latitude: lat, longitude: lng } = pos.coords;
+                currentMapCenter = { lng, lat };
+                if (amapInstance && amapMarker) { amapInstance.setCenter([lng, lat]); amapMarker.setPosition([lng, lat]); reverseGeocode(lng, lat); }
+                showToast('已定位到当前位置 ✅');
+            }, err => {
+                let msg = '定位失败'; if (err.code === 1) msg = '定位权限被拒绝'; else if (err.code === 2) msg = '无法获取位置'; else if (err.code === 3) msg = '定位超时';
+                showToast(msg, 'error');
+            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+        }
+
+        function confirmLocation() {
+            if (!currentMapCenter) { showToast('请先在地图上选择位置', 'error'); return; }
+            selectedLocation = { lat: currentMapCenter.lat, lng: currentMapCenter.lng, address: currentMapCenter.address || `${currentMapCenter.lat.toFixed(4)}, ${currentMapCenter.lng.toFixed(4)}` };
+            updateLocationTag(); closeMapModal(); showToast('位置已确认 ✅');
+        }
+
+        function updateLocationTag() {
+            const tag = document.getElementById('location-tag-area');
+            const text = document.getElementById('location-tag-text');
+            if (selectedLocation) { tag.classList.remove('hidden'); text.textContent = selectedLocation.address; }
+            else tag.classList.add('hidden');
+        }
+
+        function clearLocation() { selectedLocation = null; updateLocationTag(); }
+        function openAmapWeb() { window.open('https://www.amap.com/', '_blank'); }
+        function openImageViewer(src) { window.open(src, '_blank'); }
+
+        // 发布动态
+        function handlePublish() {
+            const textarea = document.getElementById('publish-textarea');
+            const content = textarea.value.trim();
+            if (!content && selectedFiles.images.length === 0 && selectedFiles.videos.length === 0 && !selectedLocation) {
+                showToast('请填写动态内容或添加图片/视频/地点', 'error'); textarea.focus(); return;
+            }
+            const publishCard = document.getElementById('publish-card');
+            const timeStr = '刚刚';
+            const locStr = selectedLocation ? ` · 来自 ${selectedLocation.address.split(' ')[0] || '已选位置'}` : '';
+            let imgsHTML = '';
+            if (selectedFiles.images.length) {
+                const urls = selectedFiles.images.map(f => URL.createObjectURL(f));
+                if (urls.length === 1) imgsHTML = `<div class="rounded-2xl overflow-hidden"><img class="w-full h-48 object-cover post-image-clickable" src="${urls[0]}" onclick="openImageViewer(this.src)"/></div>`;
+                else if (urls.length === 2) imgsHTML = `<div class="grid grid-cols-2 gap-2 rounded-2xl">${urls.map(u => `<img class="w-full aspect-video object-cover post-image-clickable" src="${u}" onclick="openImageViewer(this.src)"/>`).join('')}</div>`;
+                else imgsHTML = `<div class="grid grid-cols-3 gap-2 rounded-2xl">${urls.slice(0,6).map(u => `<img class="w-full aspect-square object-cover post-image-clickable" src="${u}" onclick="openImageViewer(this.src)"/>`).join('')}${urls.length>6?`<div class="w-full aspect-square bg-gray-200 rounded-xl flex items-center justify-center text-sm font-bold">+${urls.length-6}</div>`:''}</div>`;
+            }
+            let vidHTML = '';
+            if (selectedFiles.videos.length) {
+                vidHTML = `<div class="rounded-2xl overflow-hidden bg-black"><video class="w-full max-h-64 object-contain" src="${URL.createObjectURL(selectedFiles.videos[0])}" controls onclick="window.open(this.src,'_blank')"></video></div>`;
+            }
+            let locBadge = '';
+            if (selectedLocation) locBadge = `<div class="inline-flex items-center gap-1.5 bg-orange-50 text-orange-500 px-3 py-1 rounded-full text-[10px] mt-2"><iconify-icon icon="ph:map-pin-fill" width="12"></iconify-icon>${selectedLocation.address}</div>`;
+
+            const newPost = document.createElement('div');
+            newPost.className = 'bg-white rounded-[24px] p-6 card-shadow border border-orange-50 space-y-4 post-fade-in';
+            newPost.innerHTML = `
+                <div class="flex justify-between items-start"><div class="flex gap-4"><img class="w-12 h-12 rounded-full border-2 border-orange-100" src="https://modao.cc/agent-py/media/generated_images/2026-05-03/3fd7407a841e46feb991081b12c29107.jpg"/><div><h4 class="font-bold text-gray-800">我</h4><p class="text-[10px] text-gray-400">${timeStr}${locStr}</p></div></div><button class="text-gray-400"><iconify-icon icon="ph:dots-three-outline-vertical-fill"></iconify-icon></button></div>
+                ${content?`<p class="text-sm text-gray-700 leading-relaxed">${escapeHTML(content)}</p>`:''}
+                ${imgsHTML}${vidHTML}${locBadge}
+                <div class="flex gap-6 pt-2">
+                    <button class="flex items-center gap-2 text-gray-400 hover:text-red-500" onclick="this.classList.toggle('text-red-500');this.querySelector('iconify-icon').setAttribute('icon',this.classList.contains('text-red-500')?'ph:heart-fill':'ph:heart-bold');this.querySelector('span').textContent=this.classList.contains('text-red-500')?'1':'0'"><iconify-icon icon="ph:heart-bold" width="20"></iconify-icon><span class="text-xs">0</span></button>
+                    <button class="flex items-center gap-2 text-gray-400 hover:text-blue-500"><iconify-icon icon="ph:chat-circle-bold" width="20"></iconify-icon><span class="text-xs">0</span></button>
+                    <button class="flex items-center gap-2 text-gray-400 hover:text-orange-500" onclick="sharePost('我')"><iconify-icon icon="ph:share-network-bold" width="20"></iconify-icon><span class="text-xs">分享</span></button>
+                </div>`;
+            publishCard.parentNode.insertBefore(newPost, publishCard.nextSibling);
+            textarea.value = ''; selectedFiles = { images: [], videos: [] }; selectedLocation = null;
+            updateFilePreview(); updateLocationTag();
+            document.getElementById('file-preview-area').classList.add('hidden');
+            document.getElementById('location-tag-area').classList.add('hidden');
+            showToast('发布成功！🎉');
+            newPost.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function escapeHTML(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+        function sharePost(name) {
+            if (navigator.share) navigator.share({ title: `${name}的宠友圈动态`, text: `查看${name}分享的宠物动态`, url: location.href }).catch(()=>{});
+            else navigator.clipboard.writeText(location.href).then(()=>showToast('链接已复制 📋')).catch(()=>showToast('分享链接：'+location.href));
+        }
+        function toggleMobileMenu() { showToast('菜单功能（演示）'); }
+        document.addEventListener('keydown', e => { if (e.key==='Escape') { const ov = document.getElementById('map-modal-overlay'); if (!ov.classList.contains('hidden')) closeMapModal(); } });
+        console.log('🐾 宠友圈已升级 - 完整功能版');
+    </script>
+</body>
+</html>
