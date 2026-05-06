@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>挂号预约 - 健康管家</title>
+  <script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
+  <script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+    body { font-family: 'Noto Sans SC', sans-serif; background-color: #FFF9F5; color: #333; }
+    .card-shadow { box-shadow: 0 10px 25px -5px rgba(255, 141, 108, 0.1), 0 8px 10px -6px rgba(255, 141, 108, 0.08); }
+    .nav-link:hover { color: #FF8D6C; }
+    .nav-active { color: #FF8D6C; font-weight: 700; border-bottom: 2px solid #FF8D6C; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col pb-20 md:pb-0">
+
+<header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-orange-50 px-4 md:px-8 py-4">
+  <div class="max-w-7xl mx-auto flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <a href="health.html" class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-orange-100 text-gray-500 hover:text-orange-500 transition-colors" title="返回健康管家">
+        <iconify-icon icon="ph:arrow-left-bold" width="22"></iconify-icon>
+      </a>
+      <div class="flex items-center gap-2">
+        <div class="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-200">
+          <iconify-icon icon="ph:paw-print-fill" width="24"></iconify-icon>
+        </div>
+        <span class="text-xl font-bold bg-gradient-to-r from-orange-600 to-orange-400 bg-clip-text text-transparent hidden sm:block">PetMind</span>
+      </div>
+    </div>
+    <nav class="hidden md:flex items-center gap-8">
+      <a class="nav-link py-1" href="index.html">首页</a>
+      <a class="nav-link py-1" href="behavior.html">行为感知</a>
+      <a class="nav-link nav-active py-1" href="health.html">健康管家</a>
+      <a class="nav-link py-1" href="social.html">宠友圈</a>
+      <a class="nav-link py-1" href="personal.html">我的</a>
+    </nav>
+    <div class="flex items-center gap-4">
+      <span class="text-xs text-gray-400 hidden lg:block">2026年05月04日</span>
+      <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 overflow-hidden border-2 border-orange-200">
+        <img alt="Pet Profile" class="w-full h-full object-cover" src="https://modao.cc/agent-py/media/generated_images/2026-05-03/2da5ba54e6d5441f82223c6806fb7447.jpg#desc=Pet%20Profile"/>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="flex-grow max-w-7xl mx-auto w-full px-4 md:px-8 py-8">
+  <div class="bg-white rounded-[32px] p-8 md:p-10 card-shadow border border-gray-50">
+    <div class="flex flex-col items-center text-center">
+      <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+        <iconify-icon icon="ph:hospital-bold" width="48" class="text-blue-500"></iconify-icon>
+      </div>
+      <h1 class="text-3xl font-bold mb-2">挂号预约</h1>
+      <p class="text-gray-500 mb-8 max-w-xl">快速预约成都本地合作宠物医院，线下就诊免排队。</p>
+      
+      <div class="flex flex-wrap gap-2 justify-center mb-6">
+        <button class="px-4 py-1.5 rounded-full bg-blue-100 text-blue-600 text-xs font-bold">全部</button>
+        <button class="px-4 py-1.5 rounded-full bg-gray-100 text-gray-500 text-xs font-medium hover:bg-blue-50 transition-colors" onclick="alert('筛选：综合医院')">综合医院</button>
+        <button class="px-4 py-1.5 rounded-full bg-gray-100 text-gray-500 text-xs font-medium hover:bg-blue-50 transition-colors" onclick="alert('筛选：专科诊所')">专科诊所</button>
+      </div>
+
+      <div class="w-full max-w-2xl space-y-4">
+        <div class="border border-gray-100 rounded-2xl p-4 hover:border-blue-200 transition-colors cursor-pointer" onclick="bookAppointment('宠爱国际动物医院（成都高新店）')">
+          <div class="flex justify-between items-center">
+            <div class="text-left"><h3 class="font-bold">宠爱国际动物医院（成都高新店）</h3><p class="text-xs text-gray-500">评分 4.9 · 高新区 · 可约今日</p></div>
+            <span class="text-blue-500 text-sm font-bold">预约 →</span>
+          </div>
+        </div>
+        <div class="border border-gray-100 rounded-2xl p-4 hover:border-blue-200 transition-colors cursor-pointer" onclick="bookAppointment('瑞鹏宠物医院（成都锦江分院）')">
+          <div class="flex justify-between items-center">
+            <div class="text-left"><h3 class="font-bold">瑞鹏宠物医院（成都锦江分院）</h3><p class="text-xs text-gray-500">评分 4.8 · 锦江区 · 可约明日</p></div>
+            <span class="text-blue-500 text-sm font-bold">预约 →</span>
+          </div>
+        </div>
+        <div class="border border-gray-100 rounded-2xl p-4 hover:border-blue-200 transition-colors cursor-pointer" onclick="bookAppointment('美联众合动物医院（成都武侯店）')">
+          <div class="flex justify-between items-center">
+            <div class="text-left"><h3 class="font-bold">美联众合动物医院（成都武侯店）</h3><p class="text-xs text-gray-500">评分 4.7 · 武侯区 · 可约5月6日</p></div>
+            <span class="text-blue-500 text-sm font-bold">预约 →</span>
+          </div>
+        </div>
+        <div class="border border-gray-100 rounded-2xl p-4 hover:border-blue-200 transition-colors cursor-pointer" onclick="bookAppointment('芭比堂动物医院（成都青羊店）')">
+          <div class="flex justify-between items-center">
+            <div class="text-left"><h3 class="font-bold">芭比堂动物医院（成都青羊店）</h3><p class="text-xs text-gray-500">评分 4.6 · 青羊区 · 可约5月7日</p></div>
+            <span class="text-blue-500 text-sm font-bold">预约 →</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-8 p-4 bg-gray-50 rounded-2xl w-full max-w-2xl text-left">
+        <p class="text-xs text-gray-500 flex items-center gap-1"><iconify-icon icon="ph:info-bold" class="text-blue-500"></iconify-icon> 如需取消，请提前2小时操作。历史预约记录可于<a href="health-records.html" class="text-blue-500 underline">健康记录</a>查看。不方便到店？试试<a href="online-consultation.html" class="text-blue-500 underline">在线问诊</a>。</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="bg-white border-t border-orange-50 py-8 px-4 mt-12">
+  <div class="max-w-7xl mx-auto text-center"><p class="text-xs text-gray-400">© 2026 PetMind 智能宠物健康管理平台</p></div>
+</footer>
+
+<div class="md:hidden fixed bottom-0 left-0 right-0 h-[84px] bg-white/80 backdrop-blur-xl border-t border-orange-50 px-2 flex justify-between items-center pb-6 z-50">
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="index.html"><iconify-icon icon="ph:house-bold" width="22"></iconify-icon><span class="text-[9px] font-bold">首页</span></a>
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="behavior.html"><iconify-icon icon="ph:dog-bold" width="22"></iconify-icon><span class="text-[9px] font-bold">行为感知</span></a>
+  <a class="flex flex-col items-center gap-1 text-orange-500 flex-1" href="health.html"><iconify-icon icon="ph:heartbeat-fill" width="22"></iconify-icon><span class="text-[9px] font-bold">健康管家</span></a>
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="social.html"><iconify-icon icon="ph:users-three-bold" width="22"></iconify-icon><span class="text-[9px] font-bold">宠友圈</span></a>
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="personal.html"><iconify-icon icon="ph:user-circle-bold" width="22"></iconify-icon><span class="text-[9px] font-bold">我的</span></a>
+</div>
+
+<script>
+  function bookAppointment(hospitalName) {
+    if (confirm(`确认预约 ${hospitalName} 吗？\n点击“确定”将跳转时间选择。`)) {
+      alert(`模拟：您已成功预约 ${hospitalName}，具体时间将稍后通知（功能开发中）。`);
+    }
+  }
+</script>
+</body>
+</html> 

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>粪便AI识别 - 智能健康评估（支持拍照/文件选择）</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/echarts.min.js"></script>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans SC', sans-serif; background-color: #FFF9F5; color: #333; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .card-shadow { box-shadow: 0 10px 25px -5px rgba(255, 141, 108, 0.1), 0 8px 10px -6px rgba(255, 141, 108, 0.1); }
+        .nav-link:hover { color: #FF8D6C; }
+        .nav-active { color: #FF8D6C; font-weight: 700; border-bottom: 2px solid #FF8D6C; }
+        
+        .upload-area {
+            border: 2px dashed #FFD8CC;
+            transition: all 0.3s ease;
+        }
+        .upload-area.dragging {
+            border-color: #FF8D6C;
+            background-color: #FFF0EB;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+<!-- 顶部导航栏 -->
+<header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-orange-50 px-4 md:px-8 py-4">
+<div class="max-w-7xl mx-auto flex justify-between items-center">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-200">
+<iconify-icon icon="ph:paw-print-fill" width="24"></iconify-icon>
+</div>
+<span class="text-xl font-bold bg-gradient-to-r from-orange-600 to-orange-400 bg-clip-text text-transparent hidden sm:block">PetMind</span>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="nav-link py-1" href="index.html">首页</a>
+<a class="nav-link py-1" href="behavior.html">行为感知</a>
+<a class="nav-link nav-active py-1" href="feces_ai.html">健康管家</a>
+<a class="nav-link py-1" href="social.html">宠友圈</a>
+<a class="nav-link py-1" href="personal.html">我的</a>
+</nav>
+<div class="flex items-center gap-4">
+<span class="text-xs text-gray-400 hidden lg:block">2026年05月03日</span>
+<button class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 md:hidden">
+<iconify-icon icon="ph:list-bold" width="24"></iconify-icon>
+</button>
+<div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 overflow-hidden border-2 border-orange-200">
+<img alt="User Avatar" class="w-full h-full object-cover" src="https://modao.cc/agent-py/media/generated_images/2026-05-03/9d632315c59d45a3a5e9a481745ab52e.jpg#desc=User%20Avatar"/>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-grow max-w-7xl mx-auto w-full px-4 md:px-8 py-8">
+<div class="mb-8">
+<h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-2">粪便AI识别 - 智能健康评估</h1>
+<p class="text-gray-500">上传或拍摄宠物粪便照片/视频，AI将实时分析健康状态</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- 左侧：上传与分析 -->
+<div class="lg:col-span-7 space-y-6">
+<!-- 上传模块 -->
+<section class="bg-white rounded-[32px] p-6 md:p-8 card-shadow border border-orange-50">
+<div class="flex flex-col md:flex-row gap-4 mb-6">
+<button class="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white py-4 rounded-2xl font-bold hover:bg-orange-600 transition-colors shadow-lg shadow-orange-100" onclick="document.getElementById('cameraInput').click()">
+<iconify-icon icon="ph:camera-bold" width="24"></iconify-icon>
+                            拍照/拍摄
+                        </button>
+<button class="flex-1 flex items-center justify-center gap-2 bg-orange-100 text-orange-600 py-4 rounded-2xl font-bold hover:bg-orange-200 transition-colors" onclick="document.getElementById('fileInput').click()">
+<iconify-icon icon="ph:image-square-bold" width="24"></iconify-icon>
+                            从相册选择
+                        </button>
+<input accept="image/*,video/*" capture="environment" class="hidden" id="cameraInput" onchange="handleFile(event)" type="file"/>
+<input accept="image/*,video/*" class="hidden" id="fileInput" onchange="handleFile(event)" type="file"/>
+</div>
+<div class="upload-area rounded-[24px] py-12 flex flex-col items-center justify-center text-center cursor-pointer" id="dropArea">
+<div class="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center text-orange-400 mb-4">
+<iconify-icon icon="ph:cloud-arrow-up-bold" width="32"></iconify-icon>
+</div>
+<p class="text-gray-700 font-medium mb-1">拖拽文件到此处上传</p>
+<p class="text-gray-400 text-xs">支持 JPG, PNG, MP4, MOV 格式</p>
+</div>
+<!-- 上传进度 (初始隐藏) -->
+<div class="hidden mt-6 bg-orange-50 rounded-2xl p-4 border border-orange-100" id="uploadProgress">
+<div class="flex justify-between items-center mb-2">
+<div class="flex items-center gap-2">
+<iconify-icon class="text-orange-500" icon="ph:file-image-bold" id="fileIcon"></iconify-icon>
+<span class="text-xs font-bold text-gray-700 truncate max-w-[150px]" id="fileName">IMG_20260503.jpg</span>
+<span class="text-[10px] text-gray-400" id="fileSize">2.4 MB</span>
+</div>
+<button class="text-gray-400 hover:text-red-500" onclick="cancelUpload()">
+<iconify-icon icon="ph:x-circle-fill" width="20"></iconify-icon>
+</button>
+</div>
+<div class="w-full bg-orange-100 h-2 rounded-full overflow-hidden">
+<div class="bg-orange-500 h-full w-0 transition-all duration-300" id="progressBar"></div>
+</div>
+<p class="text-[10px] text-orange-600 mt-2 font-medium" id="statusText">正在解析图片特征...</p>
+</div>
+</section>
+<!-- 分析结果展示 (初始隐藏，由上传触发) -->
+<section class="hidden bg-white rounded-[32px] p-6 md:p-8 card-shadow border border-orange-50 animate-in fade-in slide-in-from-bottom-4 duration-500" id="analysisResult">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-xl font-bold text-gray-800">AI 分析结果报告</h2>
+<div class="flex items-center gap-2 px-3 py-1 bg-green-50 text-green-600 rounded-full text-xs font-bold">
+<iconify-icon icon="ph:check-circle-fill"></iconify-icon>
+                            已完成
+                        </div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+<div class="flex flex-col items-center justify-center p-6 bg-orange-50 rounded-[24px] text-center">
+<span class="text-gray-500 text-xs mb-1">综合健康评分</span>
+<div class="text-5xl font-black text-orange-500 mb-2">85<span class="text-lg">/100</span></div>
+<div class="text-sm font-bold text-orange-600">健康状况良好</div>
+</div>
+<div class="space-y-3">
+<div class="bg-gray-50 p-4 rounded-2xl">
+<span class="text-[10px] text-gray-400 block mb-1">形态特征 (布里斯托分类)</span>
+<div class="flex justify-between items-center">
+<span class="text-sm font-bold">4型 - 顺滑如香肠状</span>
+<span class="text-xs text-green-500 font-bold">理想</span>
+</div>
+</div>
+<div class="bg-gray-50 p-4 rounded-2xl">
+<span class="text-[10px] text-gray-400 block mb-1">颜色识别</span>
+<div class="flex items-center gap-2">
+<div class="w-4 h-4 rounded-full bg-[#5D4037]"></div>
+<span class="text-sm font-bold">深褐色 (正常)</span>
+</div>
+</div>
+<div class="bg-gray-50 p-4 rounded-2xl">
+<span class="text-[10px] text-gray-400 block mb-1">质地评估</span>
+<div class="flex justify-between items-center">
+<span class="text-sm font-bold">湿润度适中，无黏液</span>
+<iconify-icon class="text-gray-300" icon="ph:info-bold"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-[#FFFBF0] rounded-[24px] p-6 border border-orange-100 mb-6">
+<h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+<iconify-icon class="text-orange-500" icon="ph:lightbulb-bold"></iconify-icon>
+                            AI 健康建议
+                        </h3>
+<p class="text-sm text-gray-600 leading-relaxed mb-4">
+                            根据AI识别结果，大黄目前的消化系统表现非常健康。排泄物的形态和颜色均在标准范围内，说明膳食中粗纤维和蛋白质的比例掌握得很好。
+                        </p>
+<ul class="space-y-2 text-xs text-gray-500">
+<li class="flex items-start gap-2">
+<iconify-icon class="mt-0.5 text-orange-400" icon="ph:caret-right-bold"></iconify-icon>
+                                建议继续保持目前的狗粮品牌和喂食量。
+                            </li>
+<li class="flex items-start gap-2">
+<iconify-icon class="mt-0.5 text-orange-400" icon="ph:caret-right-bold"></iconify-icon>
+                                换季期间注意饮水量，可适当添加少量益生菌。
+                            </li>
+<li class="flex items-start gap-2">
+<iconify-icon class="mt-0.5 text-orange-400" icon="ph:caret-right-bold"></iconify-icon>
+                                若发现排泄物颜色转深或伴有剧烈异味，请及时复查。
+                            </li>
+</ul>
+</div>
+<div class="flex gap-4">
+<button class="flex-1 py-4 bg-orange-500 text-white rounded-2xl font-bold shadow-lg shadow-orange-100">保存记录</button>
+<button class="px-6 py-4 bg-gray-100 text-gray-500 rounded-2xl font-bold hover:bg-gray-200" onclick="resetAnalysis()">重新分析</button>
+</div>
+</section>
+<!-- 专业提示 -->
+<section class="bg-[#2B2B2B] rounded-[32px] p-6 text-white overflow-hidden relative">
+<iconify-icon class="absolute -right-4 -bottom-4 opacity-10" icon="ph:first-aid-kit-bold" width="120"></iconify-icon>
+<h3 class="font-bold mb-4 flex items-center gap-2 text-orange-400">
+<iconify-icon icon="ph:warning-circle-bold"></iconify-icon>
+                        温馨提示
+                    </h3>
+<p class="text-xs opacity-80 leading-relaxed">
+                        AI识别结果仅供日常健康参考，不能替代专业的兽医诊断。若您的宠物出现拉稀、血便、精神萎靡、食欲不振等明显异常症状，请立即送往附近宠物医院就诊。
+                    </p>
+</section>
+</div>
+<!-- 右侧：历史记录 -->
+<div class="lg:col-span-5 space-y-6">
+<section class="bg-white rounded-[32px] p-6 md:p-8 card-shadow border border-orange-50">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-xl font-bold text-gray-800">历史分析记录</h2>
+<a class="text-orange-500 text-xs font-bold hover:underline" href="#">查看全部</a>
+</div>
+<!-- 搜索与筛选 -->
+<div class="relative mb-6">
+<iconify-icon class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" icon="ph:magnifying-glass-bold" width="18"></iconify-icon>
+<input class="w-full bg-gray-50 border-none rounded-2xl py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-orange-200 transition-all" placeholder="搜索日期或关键词..." type="text"/>
+</div>
+<!-- 历史列表 -->
+<div class="space-y-4 max-h-[500px] overflow-y-auto pr-2 no-scrollbar">
+<!-- 记录1 -->
+<div class="group p-4 bg-gray-50 rounded-2xl hover:bg-orange-50 transition-colors border border-transparent hover:border-orange-100">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-orange-500 shadow-sm">
+<iconify-icon icon="ph:calendar-bold" width="20"></iconify-icon>
+</div>
+<div>
+<div class="text-sm font-bold text-gray-800">2026年05月01日</div>
+<div class="text-[10px] text-gray-400">下午 14:30 · 正常</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-lg font-black text-orange-500 leading-none">82</div>
+<div class="text-[8px] text-gray-400">评分</div>
+</div>
+</div>
+<p class="text-[11px] text-gray-500 line-clamp-2">形态：4型；颜色：褐色；状态稳定，维持现状即可。</p>
+</div>
+<!-- 记录2 -->
+<div class="group p-4 bg-gray-50 rounded-2xl hover:bg-orange-50 transition-colors border border-transparent hover:border-orange-100">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-yellow-500 shadow-sm">
+<iconify-icon icon="ph:warning-bold" width="20"></iconify-icon>
+</div>
+<div>
+<div class="text-sm font-bold text-gray-800">2026年04月25日</div>
+<div class="text-[10px] text-gray-400">上午 09:12 · 偏稀</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-lg font-black text-yellow-600 leading-none">65</div>
+<div class="text-[8px] text-gray-400">评分</div>
+</div>
+</div>
+<p class="text-[11px] text-gray-500 line-clamp-2">形态：6型；颜色：淡褐色；可能与昨日更换零食品牌有关，建议禁食观察12小时。</p>
+</div>
+<!-- 记录3 -->
+<div class="group p-4 bg-gray-50 rounded-2xl hover:bg-orange-50 transition-colors border border-transparent hover:border-orange-100">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-orange-500 shadow-sm">
+<iconify-icon icon="ph:calendar-bold" width="20"></iconify-icon>
+</div>
+<div>
+<div class="text-sm font-bold text-gray-800">2026年04月18日</div>
+<div class="text-[10px] text-gray-400">晚上 21:05 · 正常</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-lg font-black text-orange-500 leading-none">88</div>
+<div class="text-[8px] text-gray-400">评分</div>
+</div>
+</div>
+<p class="text-[11px] text-gray-500 line-clamp-2">形态：3型；颜色：深褐色；饮水量略显不足，注意补充水分。</p>
+</div>
+</div>
+</section>
+<!-- 广告/小工具 -->
+<div class="bg-gradient-to-br from-orange-400 to-pink-400 rounded-[32px] p-6 text-white">
+<h4 class="font-bold mb-2">专业分析工具</h4>
+<p class="text-[10px] opacity-90 mb-4">想要更深度的肠道菌群分析？点击了解居家采样检测套装。</p>
+<button class="w-full py-2 bg-white/20 backdrop-blur-md rounded-xl text-xs font-bold hover:bg-white/30 transition-all">立即查看详情</button>
+</div>
+</div>
+</div>
+</main>
+<footer class="bg-white border-t border-orange-50 py-8 px-4 mt-12">
+<div class="max-w-7xl mx-auto text-center">
+<div class="flex justify-center gap-6 mb-4">
+<a class="text-gray-400 hover:text-orange-500" href="#"><iconify-icon icon="ph:wechat-logo-bold" width="24"></iconify-icon></a>
+<a class="text-gray-400 hover:text-orange-500" href="#"><iconify-icon icon="ph:instagram-logo-bold" width="24"></iconify-icon></a>
+<a class="text-gray-400 hover:text-orange-500" href="#"><iconify-icon icon="ph:twitter-logo-bold" width="24"></iconify-icon></a>
+</div>
+<p class="text-xs text-gray-400">© 2026 PetMind 智能宠物健康管理平台. All rights reserved.</p>
+</div>
+</footer>
+<!-- 移动端底部导航 (与index.html一致) -->
+<div class="md:hidden fixed bottom-0 left-0 right-0 h-[84px] bg-white/80 backdrop-blur-xl border-t border-orange-50 px-2 flex justify-between items-center pb-6 z-50">
+<a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="index.html">
+<iconify-icon icon="ph:house-bold" width="22"></iconify-icon>
+<span class="text-[9px] font-bold">首页</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="behavior.html">
+<iconify-icon icon="ph:dog-bold" width="22"></iconify-icon>
+<span class="text-[9px] font-bold">行为感知</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-orange-500 flex-1" href="feces_ai.html">
+<iconify-icon icon="ph:heartbeat-fill" width="22"></iconify-icon>
+<span class="text-[9px] font-bold">健康管家</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="social.html">
+<iconify-icon icon="ph:users-three-bold" width="22"></iconify-icon>
+<span class="text-[9px] font-bold">宠友圈</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="personal.html">
+<iconify-icon icon="ph:user-circle-bold" width="22"></iconify-icon>
+<span class="text-[9px] font-bold">我的</span>
+</a>
+</div>
+<script>
+        // 文件上传处理逻辑
+        const dropArea = document.getElementById('dropArea');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const progressBar = document.getElementById('progressBar');
+        const analysisResult = document.getElementById('analysisResult');
+        const statusText = document.getElementById('statusText');
+
+        // 拖拽相关
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.add('dragging'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.remove('dragging'), false);
+        });
+
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        function handleFile(event) {
+            const files = event.target.files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            if (files.length === 0) return;
+            const file = files[0];
+            
+            // 更新UI显示文件信息
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+            
+            // 设置图标
+            const fileIcon = document.getElementById('fileIcon');
+            if (file.type.startsWith('video/')) {
+                fileIcon.setAttribute('icon', 'ph:video-camera-bold');
+            } else {
+                fileIcon.setAttribute('icon', 'ph:file-image-bold');
+            }
+
+            // 显示进度条
+            uploadProgress.classList.remove('hidden');
+            analysisResult.classList.add('hidden');
+            
+            simulateUpload();
+        }
+
+        function simulateUpload() {
+            let progress = 0;
+            statusText.textContent = "正在上传文件...";
+            const interval = setInterval(() => {
+                progress += Math.random() * 30;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    statusText.textContent = "AI 正在深度解析...";
+                    setTimeout(showResult, 1000);
+                }
+                progressBar.style.width = progress + '%';
+            }, 500);
+        }
+
+        function showResult() {
+            uploadProgress.classList.add('hidden');
+            analysisResult.classList.remove('hidden');
+            // 滚动到结果
+            analysisResult.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function cancelUpload() {
+            uploadProgress.classList.add('hidden');
+            progressBar.style.width = '0%';
+        }
+
+        function resetAnalysis() {
+            analysisResult.classList.add('hidden');
+            uploadProgress.classList.add('hidden');
+            progressBar.style.width = '0%';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // 点击上传区域触发文件选择
+        dropArea.onclick = () => document.getElementById('fileInput').click();
+    </script>
+</body>
+</html>

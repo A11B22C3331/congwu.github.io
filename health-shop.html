@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>健康优选 - 健康管家</title>
+  <script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
+  <script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+    body { font-family: 'Noto Sans SC', sans-serif; background-color: #FFF9F5; color: #333; }
+    .card-shadow { box-shadow: 0 10px 25px -5px rgba(255, 141, 108, 0.1), 0 8px 10px -6px rgba(255, 141, 108, 0.08); }
+    .nav-link:hover { color: #FF8D6C; }
+    .nav-active { color: #FF8D6C; font-weight: 700; border-bottom: 2px solid #FF8D6C; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col pb-20 md:pb-0">
+
+<header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-orange-50 px-4 md:px-8 py-4">
+  <div class="max-w-7xl mx-auto flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <a href="health.html" class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-orange-100 text-gray-500 hover:text-orange-500 transition-colors" title="返回健康管家">
+        <iconify-icon icon="ph:arrow-left-bold" width="22"></iconify-icon>
+      </a>
+      <div class="flex items-center gap-2">
+        <div class="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-200">
+          <iconify-icon icon="ph:paw-print-fill" width="24"></iconify-icon>
+        </div>
+        <span class="text-xl font-bold bg-gradient-to-r from-orange-600 to-orange-400 bg-clip-text text-transparent hidden sm:block">PetMind</span>
+      </div>
+    </div>
+    <nav class="hidden md:flex items-center gap-8">
+      <a class="nav-link py-1" href="index.html">首页</a>
+      <a class="nav-link py-1" href="behavior.html">行为感知</a>
+      <a class="nav-link nav-active py-1" href="health.html">健康管家</a>
+      <a class="nav-link py-1" href="social.html">宠友圈</a>
+      <a class="nav-link py-1" href="personal.html">我的</a>
+    </nav>
+    <div class="flex items-center gap-4">
+      <span class="text-xs text-gray-400 hidden lg:block">2026年05月04日</span>
+      <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 overflow-hidden border-2 border-orange-200">
+        <img alt="Pet Profile" class="w-full h-full object-cover" src="https://modao.cc/agent-py/media/generated_images/2026-05-03/2da5ba54e6d5441f82223c6806fb7447.jpg#desc=Pet%20Profile"/>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="flex-grow max-w-7xl mx-auto w-full px-4 md:px-8 py-8">
+  <div class="bg-white rounded-[32px] p-8 md:p-10 card-shadow border border-gray-50">
+    <div class="flex flex-col items-center text-center">
+      <div class="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mb-6">
+        <iconify-icon icon="ph:shopping-cart-bold" width="48" class="text-purple-500"></iconify-icon>
+      </div>
+      <h1 class="text-3xl font-bold mb-2">健康优选</h1>
+      <p class="text-gray-500 mb-8 max-w-xl">科学定制营养方案，甄选正品宠物健康产品，满199包邮。</p>
+      
+      <!-- AI推荐 -->
+      <div class="w-full max-w-4xl bg-purple-50 rounded-2xl p-4 mb-8 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <iconify-icon icon="ph:seal-check-bold" width="28" class="text-purple-500"></iconify-icon>
+          <span class="text-sm font-bold text-purple-800">AI 为您推荐：根据大黄近期体重数据，优选体重控制处方粮。</span>
+        </div>
+        <button class="px-4 py-2 bg-purple-500 text-white rounded-xl text-sm font-bold hover:bg-purple-600 transition-colors" onclick="handleShopClick('AI推荐组合')">查看推荐</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+        <div class="bg-purple-50 rounded-2xl p-6 border border-purple-100 flex flex-col items-center">
+          <iconify-icon icon="ph:dog-bold" width="32" class="text-purple-500 mb-3"></iconify-icon>
+          <h3 class="font-bold mb-2">处方粮</h3>
+          <p class="text-xs text-gray-500 mb-4">肠胃/皮肤/关节等定制营养</p>
+          <button class="mt-auto w-full py-2 bg-purple-500 text-white rounded-xl text-sm font-bold hover:bg-purple-600 transition-colors" onclick="handleShopClick('处方粮')">选购</button>
+        </div>
+        <div class="bg-pink-50 rounded-2xl p-6 border border-pink-100 flex flex-col items-center">
+          <iconify-icon icon="ph:pill-bold" width="32" class="text-pink-500 mb-3"></iconify-icon>
+          <h3 class="font-bold mb-2">营养补充</h3>
+          <p class="text-xs text-gray-500 mb-4">维生素、益生菌等日常保健</p>
+          <button class="mt-auto w-full py-2 bg-pink-500 text-white rounded-xl text-sm font-bold hover:bg-pink-600 transition-colors" onclick="handleShopClick('营养补充')">选购</button>
+        </div>
+        <div class="bg-orange-50 rounded-2xl p-6 border border-orange-100 flex flex-col items-center">
+          <iconify-icon icon="ph:first-aid-kit-bold" width="32" class="text-orange-500 mb-3"></iconify-icon>
+          <h3 class="font-bold mb-2">寄生虫防治</h3>
+          <p class="text-xs text-gray-500 mb-4">驱虫药、滴剂等定期防护</p>
+          <button class="mt-auto w-full py-2 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-colors" onclick="handleShopClick('寄生虫防治')">选购</button>
+        </div>
+      </div>
+
+      <!-- 热门单品 -->
+      <div class="mt-10 w-full max-w-4xl border-t border-gray-100 pt-6">
+        <h3 class="text-sm font-bold mb-4 text-left">热门单品</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="border border-gray-100 rounded-xl p-3 text-left cursor-pointer hover:shadow-md transition-shadow" onclick="handleShopClick('益生菌粉')">
+            <div class="h-20 bg-gray-100 rounded-lg mb-2 flex items-center justify-center text-gray-300"><iconify-icon icon="ph:package-bold" width="24"></iconify-icon></div>
+            <p class="text-xs font-bold">宠物益生菌粉</p><p class="text-[10px] text-gray-500">¥89</p>
+          </div>
+          <div class="border border-gray-100 rounded-xl p-3 text-left cursor-pointer hover:shadow-md transition-shadow" onclick="handleShopClick('关节软骨素')">
+            <div class="h-20 bg-gray-100 rounded-lg mb-2 flex items-center justify-center text-gray-300"><iconify-icon icon="ph:package-bold" width="24"></iconify-icon></div>
+            <p class="text-xs font-bold">关节软骨素</p><p class="text-[10px] text-gray-500">¥129</p>
+          </div>
+          <div class="border border-gray-100 rounded-xl p-3 text-left cursor-pointer hover:shadow-md transition-shadow" onclick="handleShopClick('体外驱虫滴剂')">
+            <div class="h-20 bg-gray-100 rounded-lg mb-2 flex items-center justify-center text-gray-300"><iconify-icon icon="ph:package-bold" width="24"></iconify-icon></div>
+            <p class="text-xs font-bold">体外驱虫滴剂</p><p class="text-[10px] text-gray-500">¥156</p>
+          </div>
+          <div class="border border-gray-100 rounded-xl p-3 text-left cursor-pointer hover:shadow-md transition-shadow" onclick="handleShopClick('体重控制处方粮')">
+            <div class="h-20 bg-gray-100 rounded-lg mb-2 flex items-center justify-center text-gray-300"><iconify-icon icon="ph:package-bold" width="24"></iconify-icon></div>
+            <p class="text-xs font-bold">体重控制处方粮</p><p class="text-[10px] text-gray-500">¥238</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 text-xs text-gray-400">
+        订单及物流可在<a href="personal.html" class="text-purple-500 underline">个人中心</a>查看，需要咨询医生？试试<a href="online-consultation.html" class="text-purple-500 underline">在线问诊</a>。
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="bg-white border-t border-orange-50 py-8 px-4 mt-12">
+  <div class="max-w-7xl mx-auto text-center"><p class="text-xs text-gray-400">© 2026 PetMind 智能宠物健康管理平台</p></div>
+</footer>
+
+<div class="md:hidden fixed bottom-0 left-0 right-0 h-[84px] bg-white/80 backdrop-blur-xl border-t border-orange-50 px-2 flex justify-between items-center pb-6 z-50">
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="index.html"><iconify-icon icon="ph:house-bold" width="22"></iconify-icon><span class="text-[9px] font-bold">首页</span></a>
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="behavior.html"><iconify-icon icon="ph:dog-bold" width="22"></iconify-icon><span class="text-[9px] font-bold">行为感知</span></a>
+  <a class="flex flex-col items-center gap-1 text-orange-500 flex-1" href="health.html"><iconify-icon icon="ph:heartbeat-fill" width="22"></iconify-icon><span class="text-[9px] font-bold">健康管家</span></a>
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="social.html"><iconify-icon icon="ph:users-three-bold" width="22"></iconify-icon><span class="text-[9px] font-bold">宠友圈</span></a>
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="personal.html"><iconify-icon icon="ph:user-circle-bold" width="22"></iconify-icon><span class="text-[9px] font-bold">我的</span></a>
+</div>
+
+<script>
+  function handleShopClick(item) {
+    if (confirm(`您选择了：${item}\n即将进入商品详情页。`)) {
+      alert(`模拟：正在加载 ${item} 相关产品…… (商城功能开发中)`);
+    }
+  }
+</script>
+</body>
+</html>

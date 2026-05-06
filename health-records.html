@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>健康记录 - 健康管家</title>
+  <script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
+  <script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+    body { font-family: 'Noto Sans SC', sans-serif; background-color: #FFF9F5; color: #333; }
+    .card-shadow { box-shadow: 0 10px 25px -5px rgba(255, 141, 108, 0.1), 0 8px 10px -6px rgba(255, 141, 108, 0.08); }
+    .nav-link:hover { color: #FF8D6C; }
+    .nav-active { color: #FF8D6C; font-weight: 700; border-bottom: 2px solid #FF8D6C; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col pb-20 md:pb-0">
+
+<header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-orange-50 px-4 md:px-8 py-4">
+  <div class="max-w-7xl mx-auto flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <a href="health.html" class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-orange-100 text-gray-500 hover:text-orange-500 transition-colors" title="返回健康管家">
+        <iconify-icon icon="ph:arrow-left-bold" width="22"></iconify-icon>
+      </a>
+      <div class="flex items-center gap-2">
+        <div class="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-200">
+          <iconify-icon icon="ph:paw-print-fill" width="24"></iconify-icon>
+        </div>
+        <span class="text-xl font-bold bg-gradient-to-r from-orange-600 to-orange-400 bg-clip-text text-transparent hidden sm:block">PetMind</span>
+      </div>
+    </div>
+    <nav class="hidden md:flex items-center gap-8">
+      <a class="nav-link py-1" href="index.html">首页</a>
+      <a class="nav-link py-1" href="behavior.html">行为感知</a>
+      <a class="nav-link nav-active py-1" href="health.html">健康管家</a>
+      <a class="nav-link py-1" href="social.html">宠友圈</a>
+      <a class="nav-link py-1" href="personal.html">我的</a>
+    </nav>
+    <div class="flex items-center gap-4">
+      <span class="text-xs text-gray-400 hidden lg:block">2026年05月04日</span>
+      <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 overflow-hidden border-2 border-orange-200">
+        <img alt="Pet Profile" class="w-full h-full object-cover" src="https://modao.cc/agent-py/media/generated_images/2026-05-03/2da5ba54e6d5441f82223c6806fb7447.jpg#desc=Pet%20Profile"/>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="flex-grow max-w-7xl mx-auto w-full px-4 md:px-8 py-8">
+  <div class="bg-white rounded-[32px] p-8 md:p-10 card-shadow border border-gray-50">
+    <div class="flex flex-col items-center text-center">
+      <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
+        <iconify-icon icon="ph:files-bold" width="48" class="text-green-500"></iconify-icon>
+      </div>
+      <h1 class="text-3xl font-bold mb-2">健康记录</h1>
+      <p class="text-gray-500 mb-8 max-w-xl">集中管理历次体检、问诊及用药记录，支持一键导出。</p>
+      
+      <div class="w-full max-w-3xl space-y-4">
+        <div class="border border-gray-100 rounded-2xl p-4 flex justify-between items-center hover:bg-green-50 transition-colors cursor-pointer" onclick="viewRecord('2026年4月健康月报')">
+          <div class="text-left"><h3 class="font-bold">2026年4月健康月报</h3><p class="text-xs text-gray-500">评分 94 · 包含4份周报</p></div>
+          <span class="text-green-600 text-sm font-bold">查看详情 →</span>
+        </div>
+        <div class="border border-gray-100 rounded-2xl p-4 flex justify-between items-center hover:bg-green-50 transition-colors cursor-pointer" onclick="viewRecord('在线问诊记录 2026-04-28')">
+          <div class="text-left"><h3 class="font-bold">2026-04-28 在线问诊记录</h3><p class="text-xs text-gray-500">医生：王医生 · 诊断：耳道清洁建议</p></div>
+          <span class="text-green-600 text-sm font-bold">查看详情 →</span>
+        </div>
+        <div class="border border-gray-100 rounded-2xl p-4 flex justify-between items-center hover:bg-green-50 transition-colors cursor-pointer" onclick="viewRecord('2026年度体检报告')">
+          <div class="text-left"><h3 class="font-bold">2026-03 年度体检报告</h3><p class="text-xs text-gray-500">宠爱国际动物医院 · 整体健康</p></div>
+          <span class="text-green-600 text-sm font-bold">查看详情 →</span>
+        </div>
+        <div class="border border-gray-100 rounded-2xl p-4 flex justify-between items-center hover:bg-green-50 transition-colors cursor-pointer" onclick="viewRecord('疫苗接种记录')">
+          <div class="text-left"><h3 class="font-bold">疫苗接种记录</h3><p class="text-xs text-gray-500">最近一次：2026-01-15 狂犬疫苗</p></div>
+          <span class="text-green-600 text-sm font-bold">查看详情 →</span>
+        </div>
+      </div>
+      
+      <div class="mt-8 flex gap-4 flex-wrap justify-center">
+        <button class="px-6 py-2 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-colors" onclick="handleUpload()">上传新记录</button>
+        <button class="px-6 py-2 border border-green-200 text-green-600 rounded-xl font-bold hover:bg-green-50 transition-colors" onclick="handleExport()">导出全部档案</button>
+        <button class="px-6 py-2 border border-gray-200 text-gray-500 rounded-xl text-sm" onclick="window.location.href='health-shop.html'">去健康优选采购药品</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="bg-white border-t border-orange-50 py-8 px-4 mt-12">
+  <div class="max-w-7xl mx-auto text-center"><p class="text-xs text-gray-400">© 2026 PetMind 智能宠物健康管理平台</p></div>
+</footer>
+
+<div class="md:hidden fixed bottom-0 left-0 right-0 h-[84px] bg-white/80 backdrop-blur-xl border-t border-orange-50 px-2 flex justify-between items-center pb-6 z-50">
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="index.html"><iconify-icon icon="ph:house-bold" width="22"></iconify-icon><span class="text-[9px] font-bold">首页</span></a>
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="behavior.html"><iconify-icon icon="ph:dog-bold" width="22"></iconify-icon><span class="text-[9px] font-bold">行为感知</span></a>
+  <a class="flex flex-col items-center gap-1 text-orange-500 flex-1" href="health.html"><iconify-icon icon="ph:heartbeat-fill" width="22"></iconify-icon><span class="text-[9px] font-bold">健康管家</span></a>
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="social.html"><iconify-icon icon="ph:users-three-bold" width="22"></iconify-icon><span class="text-[9px] font-bold">宠友圈</span></a>
+  <a class="flex flex-col items-center gap-1 text-gray-400 flex-1" href="personal.html"><iconify-icon icon="ph:user-circle-bold" width="22"></iconify-icon><span class="text-[9px] font-bold">我的</span></a>
+</div>
+
+<script>
+  function viewRecord(name) { alert(`模拟打开详细报告：${name}`); }
+  function handleUpload() { alert('模拟：已打开文件选择窗口。'); }
+  function handleExport() { alert('正在生成 PDF，请稍候... 模拟完成'); }
+</script>
+</body>
+</html>
